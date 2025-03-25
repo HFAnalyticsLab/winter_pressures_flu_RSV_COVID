@@ -27,7 +27,7 @@ y20_21<-format(as.Date(seq(lubridate::ymd('2020-11-30'),lubridate::ymd('2021-04-
 y21_22<-format(as.Date(seq(lubridate::ymd('2021-11-29'),lubridate::ymd('2022-04-03'),by='1 day')),"%Y-%m-%d")
 y22_23<-format(as.Date(seq(lubridate::ymd('2022-11-14'),lubridate::ymd('2023-04-03'),by='1 day')),"%Y-%m-%d")
 y23_24<-format(as.Date(seq(lubridate::ymd('2023-11-20'),lubridate::ymd('2024-03-31'),by='1 day')),"%Y-%m-%d")
-y24_25<-format(as.Date(seq(lubridate::ymd('2024-11-25'),lubridate::ymd('2025-02-23'),by='1 day')),"%Y-%m-%d")
+y24_25<-format(as.Date(seq(lubridate::ymd('2024-11-25'),lubridate::ymd('2025-03-20'),by='1 day')),"%Y-%m-%d")
 
 
 # sitreps -----------------------------------------------
@@ -95,14 +95,14 @@ y24_25<-format(as.Date(seq(lubridate::ymd('2024-11-25'),lubridate::ymd('2025-02-
 # curl_download(link, destfile = destfile)
 # 
 #2024-25
-# link<-'https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2025/02/Web-File-Timeseries-UEC-Daily-SitRep-3.xlsx'
-# 
-# destfile <- here::here('data', "raw2024.xlsx")
-# curl_download(link, destfile = destfile)
+link<-'https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2025/03/Web-File-Timeseries-UEC-Daily-SitRep-2.xlsx'
+
+destfile <- here::here('data', "raw2024.xlsx")
+curl_download(link, destfile = destfile)
 
 # UKHSA - weekly flu 
 # 
-link<-'https://assets.publishing.service.gov.uk/media/67c87349d0fba2f1334cf2b2/weekly-influenza-and-COVID-19-report-data-week-10-2025.ods'
+link<-'https://assets.publishing.service.gov.uk/media/67dae325dd55380604d70aa8/weekly-influenza-and-COVID-19-report-data-week-12-2025.ods'
 destfile <- here::here('data', "weekly_flu.ods")
 curl_download(link, destfile = destfile)
 
@@ -247,25 +247,24 @@ winter_illness<-Sitrep_daily_all %>%
   filter(str_detect(name,"ENGLAND")) %>% 
   mutate(isoweek=date2ISOweek(date)) %>%
   mutate(isoweek_short=str_sub(isoweek, 1,8)) %>% 
-  group_by(isoweek_short,country=name) %>%  
-  summarise(across(where(is.numeric), sum, na.rm = TRUE))%>% 
-  mutate(date=ISOweek2date(paste0(isoweek_short,"-1"))) %>% 
-  pivot_longer(-c(isoweek_short, date, country), names_to="metric", values_to="count") %>% 
-  mutate(metric=case_when(metric %in% c("beds.closed", "adult.d&v.beds.closed", "paeds.d&v.beds.closed")~ "beds.d&v.closed", 
-                          metric %in% c("beds.closed.unocc", "adult.d&v.beds.closed.unocc","paeds.d&v.beds.closed.unocc")~ "beds.d&v.closed.unocc", 
-                          TRUE~ metric), 
-         country=ifelse(country=="ENGLAND (All Acute Trusts)","ENGLAND",country)) %>% 
+  select(-c(nhs.england.region,code)) %>% 
+  rename(country=name) %>% 
+  mutate(country=ifelse(country=="ENGLAND (All Acute Trusts)","ENGLAND",country)) %>% 
   filter(country=="ENGLAND") %>% 
-  mutate(metric_label= case_when(metric=="beds.closed.norovirus"~  "D&V, Norovirus beds closed",
-                                 metric=="cc.flu.beds"~ "Critical Care Flu Beds", 
-                                 metric=="g&a.flu.beds"~ "General and Acute Flu Beds", 
-                                 metric=="beds.d&v.closed"~ "D&V, Norovirus beds closed", 
-                                 metric=="beds.d&v.closed.unocc"~ "D&V, Norovirus beds Closed and Unoccupied", 
-                                 metric=="paeds.rsv.beds.closed"~ "Paeds RSV Beds Closed", 
-                                 metric=="paeds.rsv.beds.closed.unocc"~ "Paeds RSV Beds Closed and Unoccpied")) %>% 
-  group_by(isoweek_short,country,date,metric_label) %>% 
-  summarise(count=sum(count)) %>% 
-  mutate(week=str_sub(isoweek_short,-3)) %>% 
+  # group_by(isoweek_short) %>%  
+  # summarise(across(where(is.numeric), sum, na.rm = TRUE))%>% 
+  # mutate(date=ISOweek2date(paste0(isoweek_short,"-1"))) %>% 
+  pivot_longer(-c(isoweek_short, date, country, isoweek), names_to="metric", values_to="count") %>% 
+  mutate(metric2=case_when(metric %in% c("beds.closed.norovirus","beds.closed", "adult.d&v.beds.closed", "paeds.d&v.beds.closed")~ "beds.d&v.closed", 
+                          metric %in% c("beds.closed.unocc", "adult.d&v.beds.closed.unocc","paeds.d&v.beds.closed.unocc")~ "beds.d&v.closed.unocc", 
+                          TRUE~ metric)) %>% 
+  filter(!is.na(count)) %>% 
+  mutate(metric_label= case_when(metric2=="beds.d&v.closed"~  "D&V, Norovirus beds closed",
+                                 metric2=="cc.flu.beds"~ "Critical Care Flu Beds", 
+                                 metric2=="g&a.flu.beds"~ "General and Acute Flu Beds", 
+                                 metric2=="beds.d&v.closed.unocc"~ "D&V, Norovirus beds - closed and Unoccupied", 
+                                 metric2=="paeds.rsv.beds.closed"~ "Paeds RSV Beds Ccosed", 
+                                 metric2=="paeds.rsv.beds.closed.unocc"~ "Paeds RSV Beds Closed and Unoccpied")) %>% 
   mutate(ft=case_when(date %in% as.Date(y16_17)~"16/17",
                       date %in% as.Date(y17_18)~"17/18",
                       date %in% as.Date(y18_19)~"18/19", 
@@ -275,13 +274,19 @@ winter_illness<-Sitrep_daily_all %>%
                       date %in% as.Date(y22_23)~"22/23", 
                       date %in% as.Date(y23_24)~ "23/24",
                       date %in% as.Date(y24_25)~"24/25")) %>% 
-   mutate(broad_metric=case_when(str_detect(metric_label,"Flu")~"FLU", 
+  distinct() %>% 
+  group_by(isoweek_short,ft,metric_label) %>% 
+  summarise(count=sum(count)) %>% 
+  mutate(week=str_sub(isoweek_short,-3)) %>% 
+  mutate(broad_metric=case_when(str_detect(metric_label,"Flu")~"FLU", 
                                 str_detect(metric_label, "D&V")~"D&V, Norovirus", 
                                 str_detect(metric_label, "Norovirus")~"D&V, Norovirus", 
                                 str_detect(metric_label,"RSV")~"RSV")) 
 
 
 
+check<-winter_illness %>% 
+  filter(metric_label=="D&V, Norovirus beds closed")
 
 d <- paste0("W", sprintf("%02d", c(46:53, 1:14))) 
 
@@ -305,7 +310,7 @@ d <- paste0("W", sprintf("%02d", c(46:53, 1:13)))
 
 winter_illness %>% 
   mutate(week = factor(week, levels = d)) %>% 
-  filter(country=="ENGLAND" & ft %in% c("17/18", "22/23", "23/24", "24/25")& broad_metric=="D&V, Norovirus") %>% 
+  filter(country=="ENGLAND" & ft %in% c("16/17","17/18", "22/23", "23/24", "24/25")& broad_metric=="D&V, Norovirus") %>% 
   group_by(broad_metric,ft, week) %>% 
   arrange() %>% 
   ggplot(aes(x = week, y = count, group = ft, colour = ft)) +
@@ -339,24 +344,19 @@ winter_illness %>%
 
 
 peak_data <- winter_illness %>%
-  filter(country=="ENGLAND" & ft %in% c("16/17", "17/18", "18/19", "22/23", "23/24", "24/25")) %>% 
+  filter(ft %in% c("16/17", "17/18", "18/19", "22/23", "23/24", "24/25")& broad_metric=="D&V, Norovirus") %>% 
   group_by(metric_label, ft) %>%
   filter(count == max(count, na.rm = TRUE)) %>%
   ungroup() %>%
-  select(date,broad_metric, metric_label, ft, week, count) %>% 
+  select(broad_metric, metric_label, ft, week, count) %>% 
   mutate(lab=paste0(week,": ",count))
 
-peak_data <- winter_illness %>%
-  filter(country=="ENGLAND" & ft %in% c("17/18", "22/23", "23/24", "24/25")) %>% 
-  group_by(broad_metric, ft, week) %>%
-  summarise(count=sum(count)) %>% 
-  group_by(broad_metric, ft) %>%
-  filter(count == max(count, na.rm = TRUE)) 
+
 
 
 
 winter_illness %>%
-  filter(country=="ENGLAND" & ft %in% c("17/18", "22/23", "23/24", "24/25")& broad_metric=="D&V, Norovirus") %>% 
+  filter(ft %in% c("16/17", "17/18", "18/19", "22/23", "23/24", "24/25")& broad_metric=="D&V, Norovirus") %>% 
   mutate(week = factor(week, levels = d)) %>% 
   ggplot(aes(x = week, y = count, group = ft, colour = ft)) +
   geom_line() +
@@ -505,7 +505,7 @@ write_csv(winter_flu_flourish,'winter_flu.csv')
 
 # RSV ---------------------------------------------------------------------
 
-rsv_admi<-readODS::read_ods(path = here::here('data', 'weekly_flu.ods') , sheet = 'Figure_34', skip = 3) 
+rsv_admi<-readODS::read_ods(path = here::here('data', 'weekly_flu.ods') , sheet = 'Figure_34', skip = 4) 
   
   
 rsv_admi <-rsv_admi %>% 
@@ -524,7 +524,7 @@ rsv_admi <-rsv_admi %>%
                         date %in% as.Date(y24_25)~"24/25")) %>% 
     filter(!is.na(ft)) %>% 
     mutate(metric="Winter 2024 to 2025 season data release", 
-         metric_label= "RSV hospital admission rates, per 100,000 (UKHSA)") %>% 
+         metric_label= "RSV hospital admission rates, per 100,000") %>% 
   rename(count=rate)
   
 
@@ -559,7 +559,7 @@ rsv_admi_past <-rsv_admi_past %>%
                       date %in% as.Date(y24_25)~"24/25")) %>% 
   filter(!is.na(ft)) %>% 
   mutate(metric="Winter 2023 to 2024 season data release", 
-         metric_label= "RSV hospital admission rates, per 100,000 (UKHSA)") %>% 
+         metric_label= "RSV hospital admission rates, per 100,000") %>% 
   rename(count=rate)
 
 
@@ -602,7 +602,7 @@ write_csv(winter_rsv_flourish,'winter_rsv.csv')
 
 # COVID -------------------------------------------------------------------
 
-covid_admi<-readODS::read_ods(path = here::here('data', 'weekly_flu.xlsx') , sheet = 'Figure_24', skip = 3) 
+covid_admi<-readODS::read_ods(path = here::here('data', 'weekly_flu.ods') , sheet = 'Figure_24', skip = 3) 
 
 
 covid_admi <-covid_admi %>% 
@@ -671,88 +671,82 @@ Sitrep_daily_all_files <- list_file %>%
 Sitrep_daily_all <- Sitrep_daily_all_files %>%
   reduce(bind_rows)
 
-
-
-x<-bed_occup %>% 
-  filter(metric=="total.beds.open") %>% 
-  filter(str_detect(isoweek_short,"2017"))
-
-bed_occup<-Sitrep_daily_all %>% 
-    filter(name=="ENGLAND"| name=="ENGLAND (All Acute Trusts)") %>% 
-    mutate(isoweek=date2ISOweek(date)) %>%
-    mutate(isoweek_short=str_sub(isoweek, 1,8)) %>% 
-    mutate(country="England") %>% 
-    group_by(isoweek_short,country=name) %>%  
-    summarise(across(where(is.numeric), mean, na.rm = TRUE))%>% 
-    mutate(date=ISOweek2date(paste0(isoweek_short,"-1"))) %>% 
-    #select(-c(nhs.england.region, code,name)) %>% 
-    pivot_longer(-c(isoweek_short, date, country), names_to="metric", values_to="count") %>% 
-    ungroup() %>% 
-    filter(metric %in% c("cc.adult.avail", "cc.adult.occ", "cc.adult.open",
-                         "total.beds.avail","total.beds.occd",
-                        "total.g&a.beds.occd","total.g&a.beds.open","total.beds.open")) %>% 
-  mutate(metric=case_when(metric=="cc.adult.avail"~"cc.adult.open", 
-                          metric=="total.beds.avail"|metric=="total.g&a.beds.open"~"total.beds.open", 
-                          metric=="total.beds.occd"| metric=="total.g&a.beds.occd"~ "total.beds.occ", 
-                          TRUE~metric)) %>% 
-     ungroup() %>% 
-  #   mutate(metric=case_when(metric %in% c("total.g&a.beds.open", "paeds.g&a.beds.open", "total.beds.avail")~ "total.beds.open", 
-  #                            metric %in% c("total.g&a.beds.occd", "paeds.g&a.beds.occd")~ "total.beds.occd", 
-  #                            metric %in% c("cc.adult.avail", "cc.adult.open")~"cc.adult.unocc",  
-  #                            metric %in% c("core.beds.open","escalation.beds.open", "occupancy.rate.x", "occupancy.rate.y", 
-  #            "total.g&a.beds.unavailable.to.non-covid.admissions.\"void\"","paeds.g&a.beds.unavailable.to.non-covid.admissions.“void”")~NA_character_,
-  #                            TRUE~metric)) %>% 
-  # filter(!is.na(metric)) %>% 
-  group_by(isoweek_short, date, country, metric) %>%
-  filter(!is.na(count)) %>% 
-  mutate(country="England") %>% 
-  pivot_wider(id_cols=c(isoweek_short, date, country), names_from=metric, values_from = count) %>%
-  mutate(total.beds.occ.percent=(total.beds.occ/total.beds.open)*100,
-         cc.adult.occ.percent=(cc.adult.occ/cc.adult.open)*100) %>% 
-  pivot_longer(-c(isoweek_short, date, country), names_to="metric", values_to="count") %>% 
-   mutate(ft=case_when( date %in% as.Date(y16_17)~"16/17",
-                        date %in% as.Date(y17_18)~"17/18",
-                        date %in% as.Date(y18_19)~"18/19", 
-                        date %in% as.Date(y19_20)~"19/20", 
-                        date %in% as.Date(y20_21)~"20/21",
-                        date %in% as.Date(y21_22)~"21/22", 
-                        date %in% as.Date(y22_23)~"22/23", 
-                        date %in% as.Date(y23_24)~ "23/24",
-                        date %in% as.Date(y24_25)~"24/25")) %>% 
-  # mutate(metric_label= case_when(metric=="bed.occup.cc.beds"~ "Critical Care Bed Occupancy", 
-  #                                metric=="bed.occup.ga.beds"~ "General and Acute Bed Occupancy", 
-  #                                metric=="more.than.14.days"~ "More than 14 days", 
-  #                                metric=="more.than.21.days"~ "More than 21 days", 
-  #                                metric=="more.than.7.days"~ "More than 7 days",
-  #                                metric=="cc.adult.occ"~ "Adult Critical Care Occupied Beds", 
-  #                                metric=="cc.adult.unocc"~ "Adult Critical Care Available Beds",
-  #                                metric=="total.beds.occd"~ "Total Occupied General and Acute Beds", 
-  #                                metric=="total.beds.open"~ "Total General and Acute Beds", 
-  #                                metric=="total.beds"~ "Total Number of Beds", 
-  #                                metric=="tota.bed.occup"~ "Total Number of Occupied Beds", 
-  #                                metric=="totel.bed.occup.percent"~"Overall Bed Occupancy")) %>% 
-  # mutate(broad_metric=case_when(str_detect(metric,"bed")~"Bed Occupancy", 
-  #                               str_detect(metric, "more.than")~"Long stay patients", 
-  #                                str_detect(metric,"occ")~"Bed Occupancy" )) %>% 
-  mutate(week=str_sub(isoweek_short,-3)) %>% 
-  filter(!is.na(ft)) 
-
-
-
-
-flourish_bed_occup<-bed_occup %>% 
-  filter(ft %in% c("16/17","17/18", "18/19", "22/23", "23/24", "24/25")) %>% 
-  mutate(week = factor(week, levels = d)) %>% 
-  arrange(ft,week) %>% 
-  filter(str_detect(metric, "open")| str_detect(metric,"percent")) %>% 
-  mutate(metric_lab=ifelse(str_detect(metric,"cc.adult"), "Adult Critical Care Beds", "Total G&A Beds")) %>% 
-  mutate(type_lab=ifelse(str_detect(metric,"percent"),"Bed Occupancy (%)", "Number of Beds")) %>% 
-  mutate(metric_lab=factor(metric_lab, levels=c("Total G&A Beds", "Adult Critical Care Beds"))) %>% 
-  arrange(ft, metric_lab, type_lab)  %>% 
-   pivot_wider(id_cols = c(week,type_lab, metric_lab), names_from=ft, values_from=count) 
-
-write.csv(flourish_bed_occup, 'flourish_bed_occup.csv') 
-
+# bed_occup<-Sitrep_daily_all %>% 
+#     filter(name=="ENGLAND"| name=="ENGLAND (All Acute Trusts)") %>% 
+#     mutate(isoweek=date2ISOweek(date)) %>%
+#     mutate(isoweek_short=str_sub(isoweek, 1,8)) %>% 
+#     mutate(country="England") %>% 
+#     group_by(isoweek_short,country=name) %>%  
+#     summarise(across(where(is.numeric), mean, na.rm = TRUE))%>% 
+#     mutate(date=ISOweek2date(paste0(isoweek_short,"-1"))) %>% 
+#     #select(-c(nhs.england.region, code,name)) %>% 
+#     pivot_longer(-c(isoweek_short, date, country), names_to="metric", values_to="count") %>% 
+#     ungroup() %>% 
+#     filter(metric %in% c("cc.adult.avail", "cc.adult.occ", "cc.adult.open",
+#                          "total.beds.avail","total.beds.occd",
+#                         "total.g&a.beds.occd","total.g&a.beds.open","total.beds.open")) %>% 
+#   mutate(metric=case_when(metric=="cc.adult.avail"~"cc.adult.open", 
+#                           metric=="total.beds.avail"|metric=="total.g&a.beds.open"~"total.beds.open", 
+#                           metric=="total.beds.occd"| metric=="total.g&a.beds.occd"~ "total.beds.occ", 
+#                           TRUE~metric)) %>% 
+#      ungroup() %>% 
+#   #   mutate(metric=case_when(metric %in% c("total.g&a.beds.open", "paeds.g&a.beds.open", "total.beds.avail")~ "total.beds.open", 
+#   #                            metric %in% c("total.g&a.beds.occd", "paeds.g&a.beds.occd")~ "total.beds.occd", 
+#   #                            metric %in% c("cc.adult.avail", "cc.adult.open")~"cc.adult.unocc",  
+#   #                            metric %in% c("core.beds.open","escalation.beds.open", "occupancy.rate.x", "occupancy.rate.y", 
+#   #            "total.g&a.beds.unavailable.to.non-covid.admissions.\"void\"","paeds.g&a.beds.unavailable.to.non-covid.admissions.“void”")~NA_character_,
+#   #                            TRUE~metric)) %>% 
+#   # filter(!is.na(metric)) %>% 
+#   group_by(isoweek_short, date, country, metric) %>%
+#   filter(!is.na(count)) %>% 
+#   mutate(country="England") %>% 
+#   pivot_wider(id_cols=c(isoweek_short, date, country), names_from=metric, values_from = count) %>%
+#   mutate(total.beds.occ.percent=(total.beds.occ/total.beds.open)*100,
+#          cc.adult.occ.percent=(cc.adult.occ/cc.adult.open)*100) %>% 
+#   pivot_longer(-c(isoweek_short, date, country), names_to="metric", values_to="count") %>% 
+#    mutate(ft=case_when( date %in% as.Date(y16_17)~"16/17",
+#                         date %in% as.Date(y17_18)~"17/18",
+#                         date %in% as.Date(y18_19)~"18/19", 
+#                         date %in% as.Date(y19_20)~"19/20", 
+#                         date %in% as.Date(y20_21)~"20/21",
+#                         date %in% as.Date(y21_22)~"21/22", 
+#                         date %in% as.Date(y22_23)~"22/23", 
+#                         date %in% as.Date(y23_24)~ "23/24",
+#                         date %in% as.Date(y24_25)~"24/25")) %>% 
+#   # mutate(metric_label= case_when(metric=="bed.occup.cc.beds"~ "Critical Care Bed Occupancy", 
+#   #                                metric=="bed.occup.ga.beds"~ "General and Acute Bed Occupancy", 
+#   #                                metric=="more.than.14.days"~ "More than 14 days", 
+#   #                                metric=="more.than.21.days"~ "More than 21 days", 
+#   #                                metric=="more.than.7.days"~ "More than 7 days",
+#   #                                metric=="cc.adult.occ"~ "Adult Critical Care Occupied Beds", 
+#   #                                metric=="cc.adult.unocc"~ "Adult Critical Care Available Beds",
+#   #                                metric=="total.beds.occd"~ "Total Occupied General and Acute Beds", 
+#   #                                metric=="total.beds.open"~ "Total General and Acute Beds", 
+#   #                                metric=="total.beds"~ "Total Number of Beds", 
+#   #                                metric=="tota.bed.occup"~ "Total Number of Occupied Beds", 
+#   #                                metric=="totel.bed.occup.percent"~"Overall Bed Occupancy")) %>% 
+#   # mutate(broad_metric=case_when(str_detect(metric,"bed")~"Bed Occupancy", 
+#   #                               str_detect(metric, "more.than")~"Long stay patients", 
+#   #                                str_detect(metric,"occ")~"Bed Occupancy" )) %>% 
+#   mutate(week=str_sub(isoweek_short,-3)) %>% 
+#   filter(!is.na(ft)) 
+# 
+# 
+# 
+# 
+# flourish_bed_occup<-bed_occup %>% 
+#   filter(ft %in% c("16/17","17/18", "18/19", "22/23", "23/24", "24/25")) %>% 
+#   mutate(week = factor(week, levels = d)) %>% 
+#   arrange(ft,week) %>% 
+#   filter(str_detect(metric, "open")| str_detect(metric,"percent")) %>% 
+#   mutate(metric_lab=ifelse(str_detect(metric,"cc.adult"), "Adult Critical Care Beds", "Total G&A Beds")) %>% 
+#   mutate(type_lab=ifelse(str_detect(metric,"percent"),"Bed Occupancy (%)", "Number of Beds")) %>% 
+#   mutate(metric_lab=factor(metric_lab, levels=c("Total G&A Beds", "Adult Critical Care Beds"))) %>% 
+#   arrange(ft, metric_lab, type_lab)  %>% 
+#    pivot_wider(id_cols = c(week,type_lab, metric_lab), names_from=ft, values_from=count) 
+# 
+# write.csv(flourish_bed_occup, 'flourish_bed_occup.csv') 
+# 
 
 
 #cc.adult.avail= cc.adult.open 
@@ -764,15 +758,15 @@ write.csv(flourish_bed_occup, 'flourish_bed_occup.csv')
 
 
 
-test<-bed_occup %>% 
-  ungroup() %>% 
-  select(ft, metric, count) %>% 
-  group_by(ft, metric) %>% 
-  summarise(sum=sum(count)) %>% 
-  filter(sum>0) %>% 
-  group_by(ft) %>% 
-  mutate(order=row_number()) %>% 
-  pivot_wider(id_cols = ft, names_from=order, values_from = metric)
+# test<-bed_occup %>% 
+#   ungroup() %>% 
+#   select(ft, metric, count) %>% 
+#   group_by(ft, metric) %>% 
+#   summarise(sum=sum(count)) %>% 
+#   filter(sum>0) %>% 
+#   group_by(ft) %>% 
+#   mutate(order=row_number()) %>% 
+#   pivot_wider(id_cols = ft, names_from=order, values_from = metric)
   
   
 # average_bed_occup<-bed_occup %>% 
@@ -1021,13 +1015,12 @@ a_and_e <- Sitrep_daily_all %>%
   filter(substring(metric_type, 8, 8) == substring(value_type, 7, 7)) %>% 
   select(-metric_type, -value_type) %>% 
   select(-c(date_type.x, date_type.y)) %>% 
+  distinct() %>% 
   mutate(isoweek=date2ISOweek(date)) %>%
   mutate(isoweek_short=str_sub(isoweek, 1,8)) %>% 
   mutate(metric=tolower(metric)) %>% 
-  group_by(isoweek_short,metric, country=name) %>%  
-  summarise(across(where(is.numeric), sum, na.rm = TRUE))%>% 
-  mutate(date=ISOweek2date(paste0(isoweek_short,"-1"))) %>% 
-  mutate(ft=case_when(date %in% as.Date(y17_18)~"17/18",
+  mutate(ft=case_when(date %in% as.Date(y16_17)~"16/17",
+                      date %in% as.Date(y17_18)~"17/18",
                       date %in% as.Date(y18_19)~"18/19", 
                       date %in% as.Date(y19_20)~"19/20", 
                       date %in% as.Date(y20_21)~"20/21",
@@ -1035,6 +1028,9 @@ a_and_e <- Sitrep_daily_all %>%
                       date %in% as.Date(y22_23)~"22/23", 
                       date %in% as.Date(y23_24)~ "23/24",
                       date %in% as.Date(y24_25)~"24/25")) %>% 
+  group_by(isoweek_short,ft,metric, country=name) %>%  
+  summarise(across(where(is.numeric), sum, na.rm = TRUE))%>% 
+  mutate(date=ISOweek2date(paste0(isoweek_short,"-1"))) %>% 
   mutate(week=str_sub(isoweek_short,-3)) %>% 
   filter(!is.na(ft)) %>% 
   mutate(country="ENGLAND")
@@ -1072,3 +1068,11 @@ flourish_a_and_e_diverts<-a_and_e %>%
   filter(metric=="a&e diverts") 
 
 write.csv(flourish_a_and_e_diverts, 'flourish_a_and_e_diverts.csv') 
+
+
+
+
+
+
+
+
