@@ -16,7 +16,7 @@ library(THFstyle)
 options(scipen=999)
 
 
-
+#Update this or new data 
 # base dates --------------------------------------------------------------
 
 y16_17<-format(as.Date(seq(lubridate::ymd('2016-11-28'),lubridate::ymd('2017-03-12'),by='1 day')),"%Y-%m-%d")
@@ -29,71 +29,65 @@ y22_23<-format(as.Date(seq(lubridate::ymd('2022-11-14'),lubridate::ymd('2023-04-
 y23_24<-format(as.Date(seq(lubridate::ymd('2023-11-20'),lubridate::ymd('2024-03-31'),by='1 day')),"%Y-%m-%d")
 y24_25<-format(as.Date(seq(lubridate::ymd('2024-11-25'),lubridate::ymd('2025-03-20'),by='1 day')),"%Y-%m-%d")
 
+d <- paste0("W", sprintf("%02d", c(46:53, 1:14))) 
 
 # sitreps -----------------------------------------------
 
+ #2015-16
+link<-'https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2015/12/DailySR-Timeseries-WE-28.02.16.xlsx'
+destfile <- here::here('data', "raw2015.xlsx")
+curl_download(link, destfile = destfile)
 
 
+#2016-17
+link<-'https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2016/12/DailySR-Web-file-Time-Series-18.xlsx'
 
-# 
-# #2015-16 
-# link<-'https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2015/12/DailySR-Timeseries-WE-28.02.16.xlsx'
-# 
-# destfile <- here::here('data', "raw2015.xlsx")
-# curl_download(link, destfile = destfile)
-# 
-# 
-# #2016-17
-# link<-'https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2016/12/DailySR-Web-file-Time-Series-18.xlsx'
-# 
-# destfile <- here::here('data', "raw2016.xlsx")
-# curl_download(link, destfile = destfile)
+destfile <- here::here('data', "raw2016.xlsx")
+curl_download(link, destfile = destfile)
 
+ #2017-18
+link<-'https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2018/03/Winter-data-Timeseries-20180304.xlsx'
 
-# #2017-18
-# link<-'https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2018/03/Winter-data-Timeseries-20180304.xlsx'
-# 
-# destfile <- here::here('data', "raw2017.xlsx")
-# curl_download(link, destfile = destfile)
-# 
-# #2018-19
-# link<-'https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2019/03/Winter-data-timeseries-20190307.xlsx'
-# 
-# destfile <- here::here('data', "raw2018.xlsx")
-# curl_download(link, destfile = destfile)
-# 
-# #2019-20
-# link<-'https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2020/03/Winter-SitRep-Acute-Time-series-2-December-2019-1-March-2020.xlsx'
-# 
-# destfile <- here::here('data', "raw2019.xlsx")
-# curl_download(link, destfile = destfile)
-# 
-# #2020-21
-# link<-'https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2021/04/UEC-Daily-SitRep-Acute-Web-File-Timeseries-1.xlsx'
-# 
-# destfile <- here::here('data', "raw2020.xlsx")
-# curl_download(link, destfile = destfile)
-# 
+destfile <- here::here('data', "raw2017.xlsx")
+curl_download(link, destfile = destfile)
+
+ #2018-19
+link<-'https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2019/03/Winter-data-timeseries-20190307.xlsx'
+destfile <- here::here('data', "raw2018.xlsx")
+curl_download(link, destfile = destfile)
+
+#2019-20
+link<-'https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2020/03/Winter-SitRep-Acute-Time-series-2-December-2019-1-March-2020.xlsx'
+destfile <- here::here('data', "raw2019.xlsx")
+curl_download(link, destfile = destfile)
+
+ #2020-21
+link<-'https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2021/04/UEC-Daily-SitRep-Acute-Web-File-Timeseries-1.xlsx'
+destfile <- here::here('data', "raw2020.xlsx")
+curl_download(link, destfile = destfile)
+
 # #2021-22
-# link<-'https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2022/04/UEC-Daily-SitRep-Web-File-Timeseries.xlsx'
-# 
-# destfile <- here::here('data', "raw2021.xlsx")
-# curl_download(link, destfile = destfile) 
-# #Need to manually change the RSV sheet name to get rid of the trailing space 
-# 
-# 
-# #2022-23
-# link<-'https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2023/04/UEC-Daily-SitRep-Web-File-Timeseries.xlsx'
-# 
-# destfile <- here::here('data', "raw2022.xlsx")
-# curl_download(link, destfile = destfile)
-# 
-# #2023-24
-# link<-'https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2024/04/Web-File-Timeseries-UEC-Daily-SitRep.xlsx'
-# 
-# destfile <- here::here('data', "raw2023.xlsx")
-# curl_download(link, destfile = destfile)
-# 
+link<-'https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2022/04/UEC-Daily-SitRep-Web-File-Timeseries.xlsx'
+destfile <- here::here('data', "raw2021.xlsx")
+curl_download(link, destfile = destfile) 
+#####----Please note----######
+#for 2021-22, Need to manually change the RSV sheet name to get rid of the trailing space
+#####-------------------######
+
+#2022-23
+link<-'https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2023/04/UEC-Daily-SitRep-Web-File-Timeseries.xlsx'
+destfile <- here::here('data', "raw2022.xlsx")
+curl_download(link, destfile = destfile)
+
+#2023-24
+link<-'https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2024/04/Web-File-Timeseries-UEC-Daily-SitRep.xlsx'
+destfile <- here::here('data', "raw2023.xlsx")
+curl_download(link, destfile = destfile)
+
+##################################
+##--Update these for new data--##
+##################################
+
 #2024-25
 link<-'https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2025/03/Web-File-Timeseries-UEC-Daily-SitRep-2.xlsx'
 
@@ -107,9 +101,9 @@ destfile <- here::here('data', "weekly_flu.ods")
 curl_download(link, destfile = destfile)
 
 
-link<-'https://assets.publishing.service.gov.uk/media/66d9e1fae87ad2f121826516/surveillance-of-influenza-and-other-seasonal-respiratory-viruses-in-the-UK-data_CORRECTION.ods'
-destfile <- here::here('data', "weekly_flu2024.ods")
-curl_download(link, destfile = destfile)
+# link<-'https://assets.publishing.service.gov.uk/media/66d9e1fae87ad2f121826516/surveillance-of-influenza-and-other-seasonal-respiratory-viruses-in-the-UK-data_CORRECTION.ods'
+# destfile <- here::here('data', "weekly_flu2024.ods")
+# curl_download(link, destfile = destfile)
 
 
 
@@ -240,8 +234,9 @@ Sitrep_daily_all <- Sitrep_daily_all_files %>%
   reduce(bind_rows)
 
 
-# Data clean up -----------------------------------------------------------
 
+
+# Winter illness data clean up -----------------------------------------------------------
 
 winter_illness<-Sitrep_daily_all %>% 
   filter(str_detect(name,"ENGLAND")) %>% 
@@ -284,12 +279,6 @@ winter_illness<-Sitrep_daily_all %>%
                                 str_detect(metric_label,"RSV")~"RSV")) 
 
 
-
-check<-winter_illness %>% 
-  filter(metric_label=="D&V, Norovirus beds closed")
-
-d <- paste0("W", sprintf("%02d", c(46:53, 1:14))) 
-
 winter_illness_flourish<-winter_illness %>% 
   filter(broad_metric=="D&V, Norovirus") %>% 
   mutate(count=ifelse(count==0,NA,count)) %>%
@@ -299,14 +288,10 @@ winter_illness_flourish<-winter_illness %>%
   pivot_wider(id_cols = c(week,broad_metric, metric_label), names_from=ft, values_from=count) %>% 
   filter(metric_label=="D&V, Norovirus beds closed")
   
-
-
 write_csv(winter_illness_flourish,'winter_illness.csv')
 
 #c("Beds Occ by long stay patients", "Adult G&A beds", "Adult critical care","G&A beds")
   
-
-d <- paste0("W", sprintf("%02d", c(46:53, 1:13))) 
 
 winter_illness %>% 
   mutate(week = factor(week, levels = d)) %>% 
@@ -327,97 +312,74 @@ winter_illness %>%
   theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
 
 
-
-
-# max_week_df <- england %>%
-#   filter(metric=="adult.d&v.beds.closed") %>% 
-#   group_by(metric, ft) %>%
-#   filter(count == max(count)) %>%  # Select rows with the max count per group
-#   select(week, metric, ft, count)   # Keep only relevant columns
+# peak_data <- winter_illness %>%
+#   filter(ft %in% c("16/17", "17/18", "18/19", "22/23", "23/24", "24/25")& broad_metric=="D&V, Norovirus") %>% 
+#   group_by(metric_label, ft) %>%
+#   filter(count == max(count, na.rm = TRUE)) %>%
+#   ungroup() %>%
+#   select(broad_metric, metric_label, ft, week, count) %>% 
+#   mutate(lab=paste0(week,": ",count))
 # 
 # 
-# 
-# num_total<-england %>% 
-#   filter(metric=="g&a.flu.beds") %>% 
-#   group_by(ft) %>% 
+# num_total<-winter_illness %>%
+#   filter(broad_metric=="FLU") %>%
+#   group_by(ft,broad_metric) %>%
 #   summarise(sum=sum(count))
-
-
-peak_data <- winter_illness %>%
-  filter(ft %in% c("16/17", "17/18", "18/19", "22/23", "23/24", "24/25")& broad_metric=="D&V, Norovirus") %>% 
-  group_by(metric_label, ft) %>%
-  filter(count == max(count, na.rm = TRUE)) %>%
-  ungroup() %>%
-  select(broad_metric, metric_label, ft, week, count) %>% 
-  mutate(lab=paste0(week,": ",count))
-
-
-
-
-
-winter_illness %>%
-  filter(ft %in% c("16/17", "17/18", "18/19", "22/23", "23/24", "24/25")& broad_metric=="D&V, Norovirus") %>% 
-  mutate(week = factor(week, levels = d)) %>% 
-  ggplot(aes(x = week, y = count, group = ft, colour = ft)) +
-  geom_line() +
-  # Highlight peak points
-  geom_point(data = peak_data, aes(x = week, y = count), size = 2, shape = 21, fill = "white") +
-  # Annotate peaks using geom_label_repel
-  ggrepel::geom_label_repel(
-    data = peak_data, 
-    aes(x = week, y = count, label = lab),
-    size = 3, label.size = 0.2, label.padding = unit(0.15, "lines"),
-    box.padding = 0.35, point.padding = 0.5, max.overlaps = 10,
-    show.legend = FALSE
-  ) +
-  # scale_x_date(
-  #   breaks = england$date[seq(1, length(england$date), by = 4)],
-  #   labels = england$week[seq(1, length(england$week), by = 4)]
-  # ) +
-  facet_grid(cols = vars(metric_label), rows=vars(broad_metric), scales = "free") +
-  labs(x="Week", y="Count", title="")+
-  theme_THF() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
+# 
+# 
+# winter_illness %>%
+#   filter(ft %in% c("16/17", "17/18", "18/19", "22/23", "23/24", "24/25")& broad_metric=="D&V, Norovirus") %>% 
+#   mutate(week = factor(week, levels = d)) %>% 
+#   ggplot(aes(x = week, y = count, group = ft, colour = ft)) +
+#   geom_line() +
+#   # Highlight peak points
+#   geom_point(data = peak_data, aes(x = week, y = count), size = 2, shape = 21, fill = "white") +
+#   # Annotate peaks using geom_label_repel
+#   ggrepel::geom_label_repel(
+#     data = peak_data, 
+#     aes(x = week, y = count, label = lab),
+#     size = 3, label.size = 0.2, label.padding = unit(0.15, "lines"),
+#     box.padding = 0.35, point.padding = 0.5, max.overlaps = 10,
+#     show.legend = FALSE
+#   ) +
+#   # scale_x_date(
+#   #   breaks = england$date[seq(1, length(england$date), by = 4)],
+#   #   labels = england$week[seq(1, length(england$week), by = 4)]
+#   # ) +
+#   facet_grid(cols = vars(metric_label), rows=vars(broad_metric), scales = "free") +
+#   labs(x="Week", y="Count", title="")+
+#   theme_THF() +
+#   theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
 
 
 
-
-
-cum_sum_total <- winter_illness %>%
-  ungroup() %>%
-  mutate(week = factor(week, levels = d)) %>% 
-  group_by(ft, metric_label) %>%  
-  arrange(ft, metric_label, week) %>% 
-  mutate(sum = cumsum(count)) 
+# cum_sum_total <- winter_illness %>%
+#   ungroup() %>%
+#   mutate(week = factor(week, levels = d)) %>% 
+#   group_by(ft, metric_label) %>%  
+#   arrange(ft, metric_label, week) %>% 
+#   mutate(sum = cumsum(count)) 
 
 
 
-cum_sum_total %>%
-  filter(ft %in% c("17/18", "22/23", "23/24", "24/25")) %>% 
-  ggplot(aes(x = week, y = sum, group = ft, colour = ft)) +
-  geom_line() +
-  # scale_x_date(
-  #   breaks = england$date[seq(1, length(england$date), by = 4)],
-  #   labels = england$week[seq(1, length(england$week), by = 4)]
-  # ) +
-  facet_grid(cols = vars(metric_label), rows=vars(broad_metric), scales = "free") +
-  labs(x="Week", y="Cumulative Sum", title="")+
-  theme_THF() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
+# cum_sum_total %>%
+#   filter(ft %in% c("17/18", "22/23", "23/24", "24/25")) %>% 
+#   ggplot(aes(x = week, y = sum, group = ft, colour = ft)) +
+#   geom_line() +
+#   # scale_x_date(
+#   #   breaks = england$date[seq(1, length(england$date), by = 4)],
+#   #   labels = england$week[seq(1, length(england$week), by = 4)]
+#   # ) +
+#   facet_grid(cols = vars(metric_label), rows=vars(broad_metric), scales = "free") +
+#   labs(x="Week", y="Cumulative Sum", title="")+
+#   theme_THF() +
+#   theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
 
 
 num_total<-winter_illness %>% 
   group_by(ft, metric_label) %>% 
   summarise(sum=sum(count))
 
-
-x<-num_total %>% 
-  filter(metric_label=="D&V, Norovirus beds closed") %>% 
-  mutate(lab=ifelse(ft %in% c("16/17", "17/18", "18/19"),"pre", "post")) %>% 
-  group_by(lab) %>% 
-  mutate(av=mean(sum))
-
-write_csv(x, file="test.csv")
 
 max_week_df <- england %>%
   group_by(broad_metric,ft) %>%
@@ -498,8 +460,6 @@ winter_flu_flourish<-winter_flu_admi %>%
 
 
 write_csv(winter_flu_flourish,'winter_flu.csv')
-
-
 
 
 
@@ -806,8 +766,6 @@ average_bed_occup<-bed_occup %>%
             max=max(count))
 
 
-
-
 bed_occup_av<-Sitrep_daily_all %>% 
   filter(name=="ENGLAND"| name=="ENGLAND (All Acute Trusts)") %>% 
   mutate(country="England") %>% 
@@ -872,47 +830,47 @@ write.csv(flourish_bed_occup, 'flourish_bed_occup.csv')
     
   
 
-bed_occup %>%
-  mutate(week = factor(week, levels = d)) %>% 
-  filter(!is.na(ft)) %>% 
-  filter( ft %in% c("17/18", "22/23", "23/24", "24/25")) %>% 
-  ggplot(aes(x = week, y = count, group = ft, colour = ft)) +
-  geom_line() +
-  # Highlight peak points
-  # geom_point(data = peak_data, aes(x = date, y = count), size = 2, shape = 21, fill = "white") +
-  # Annotate peaks using geom_label_repel
-  # ggrepel::geom_label_repel(
-  #   data = peak_data, 
-  #   aes(x = date, y = count, label = lab),
-  #   size = 3, label.size = 0.2, label.padding = unit(0.15, "lines"),
-  #   box.padding = 0.35, point.padding = 0.5, max.overlaps = 10,
-  #   show.legend = FALSE
-  # ) +
-  # scale_x_date(
-  #   breaks = england$date[seq(1, length(england$date), by = 4)],
-  #   labels = england$week[seq(1, length(england$week), by = 4)]
-  # ) +
-  facet_grid(cols = vars(metric_label), rows=vars(broad_metric), scales = "free") +
-  labs(x="Week", y="", title="")+
-  theme_THF() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
-
-
-
-
-
-
-bed_occup %>%
-  filter(str_detect(metric_label, "Occupancy")) %>% 
-  mutate(week=str_sub(isoweek_short,-3)) %>% 
-  mutate(week = factor(week, levels = d)) %>% 
-  #filter( ft %in% c("17/18", "22/23", "23/24", "24/25")) %>% 
-  ggplot(aes(x = week, y = count, group = ft, colour = ft)) +
-  geom_line() +
-facet_grid(cols = vars(metric_label), rows=vars(broad_metric), scales = "free") +
-  labs(x="Week", y="", title="")+
-  theme_THF() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
+# bed_occup %>%
+#   mutate(week = factor(week, levels = d)) %>% 
+#   filter(!is.na(ft)) %>% 
+#   filter( ft %in% c("17/18", "22/23", "23/24", "24/25")) %>% 
+#   ggplot(aes(x = week, y = count, group = ft, colour = ft)) +
+#   geom_line() +
+#   # Highlight peak points
+#   # geom_point(data = peak_data, aes(x = date, y = count), size = 2, shape = 21, fill = "white") +
+#   # Annotate peaks using geom_label_repel
+#   # ggrepel::geom_label_repel(
+#   #   data = peak_data, 
+#   #   aes(x = date, y = count, label = lab),
+#   #   size = 3, label.size = 0.2, label.padding = unit(0.15, "lines"),
+#   #   box.padding = 0.35, point.padding = 0.5, max.overlaps = 10,
+#   #   show.legend = FALSE
+#   # ) +
+#   # scale_x_date(
+#   #   breaks = england$date[seq(1, length(england$date), by = 4)],
+#   #   labels = england$week[seq(1, length(england$week), by = 4)]
+#   # ) +
+#   facet_grid(cols = vars(metric_label), rows=vars(broad_metric), scales = "free") +
+#   labs(x="Week", y="", title="")+
+#   theme_THF() +
+#   theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
+# 
+# 
+# 
+# 
+# 
+# 
+# bed_occup %>%
+#   filter(str_detect(metric_label, "Occupancy")) %>% 
+#   mutate(week=str_sub(isoweek_short,-3)) %>% 
+#   mutate(week = factor(week, levels = d)) %>% 
+#   #filter( ft %in% c("17/18", "22/23", "23/24", "24/25")) %>% 
+#   ggplot(aes(x = week, y = count, group = ft, colour = ft)) +
+#   geom_line() +
+# facet_grid(cols = vars(metric_label), rows=vars(broad_metric), scales = "free") +
+#   labs(x="Week", y="", title="")+
+#   theme_THF() +
+#   theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
 
 
 
