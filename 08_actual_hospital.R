@@ -19,11 +19,11 @@ aevolume <- read_excel(destfile, sheet = 'Activity')
 View(aevolume)
 
 # Read the 'Performance' sheet
-aewait <- read_excel(destfile, sheet = 'Performance')
-View(aewait)
+# aewait <- read_excel(destfile, sheet = 'Performance')
+# View(aewait)
 
-aevolume<-readxl::read_excel("data/aevol.xls", sheet='Activity')
-aewait<-readxl::read_excel("data/aevol.xls", sheet='Performance')
+# aevolume<-readxl::read_excel("data/aevol.xls", sheet='Activity')
+# aewait<-readxl::read_excel("data/aevol.xls", sheet='Performance')
 
 aevolume<-aevolume %>% 
   clean_names() %>% 
@@ -40,6 +40,8 @@ aevolume<-aevolume %>%
   filter(period>as.Date("2014-12-01"))
 
 aevolume[2:4] = lapply(aevolume[2:4], FUN = function(y){as.numeric(y)})
+
+#note that the code below was from other script is not relevant
 
 # #aewait<-aewait %>% 
 #   clean_names() %>% 
@@ -103,7 +105,7 @@ aevolume[2:4] = lapply(aevolume[2:4], FUN = function(y){as.numeric(y)})
 
 
 
-########## plot code use this if you want graph
+########## plot code use this if you want graph ######
 options(scipen = 999)
 
 library(ggplot2)
@@ -150,103 +152,11 @@ print("The plot has been saved as 'emergency_admissions_plot.png'.")
 print(plot)
 
 #################
-# code for the totals of each column per winter stats
-library(dplyr)
-library(lubridate)
-
-# Create sequences for each winter period excluding November
-y17_18 <- format(as.Date(seq(lubridate::ymd('2017-12-01'), lubridate::ymd('2018-03-04'), by='1 month')), "%Y-%m")
-y18_19 <- format(as.Date(seq(lubridate::ymd('2018-12-01'), lubridate::ymd('2019-04-03'), by='1 month')), "%Y-%m")
-y19_20 <- format(as.Date(seq(lubridate::ymd('2019-12-01'), lubridate::ymd('2020-03-01'), by='1 month')), "%Y-%m")
-y20_21 <- format(as.Date(seq(lubridate::ymd('2020-12-01'), lubridate::ymd('2021-04-04'), by='1 month')), "%Y-%m")
-y21_22 <- format(as.Date(seq(lubridate::ymd('2021-12-01'), lubridate::ymd('2022-04-03'), by='1 month')), "%Y-%m")
-y22_23 <- format(as.Date(seq(lubridate::ymd('2022-12-01'), lubridate::ymd('2023-04-03'), by='1 month')), "%Y-%m")
-y23_24 <- format(as.Date(seq(lubridate::ymd('2023-12-01'), lubridate::ymd('2024-03-31'), by='1 month')), "%Y-%m")
-y24_25 <- format(as.Date(seq(lubridate::ymd('2024-12-01'), lubridate::ymd('2025-02-23'), by='1 month')), "%Y-%m")
-
-# Convert sequences to date format
-winter_dates <- c(y17_18, y18_19, y19_20, y20_21, y21_22, y22_23, y23_24, y24_25)
-winter_dates <- as.Date(paste0(winter_dates, "-01"))
-
-# Filter and summarize the data
-aevolume <- aevolume %>%
-  mutate(period_month = format(period, "%Y-%m")) %>%
-  filter(as.Date(paste0(period_month, "-01")) %in% winter_dates) %>%
-  mutate(winter = case_when(
-    period_month %in% y17_18 ~ "17/18",
-    period_month %in% y18_19 ~ "18/19",
-    period_month %in% y19_20 ~ "19/20",
-    period_month %in% y20_21 ~ "20/21",
-    period_month %in% y21_22 ~ "21/22",
-    period_month %in% y22_23 ~ "22/23",
-    period_month %in% y23_24 ~ "23/24",
-    period_month %in% y24_25 ~ "24/25"
-  ))
-
-# Summarize total attendances for each winter period for each column
-winter_summary <- aevolume %>%
-  group_by(winter) %>%
-  summarise(
-    total_other_emergency_admissions = sum(other_emergency_admissions_i_e_not_via_a_e, na.rm = TRUE),
-    total_emergency_admissions = sum(total_emergency_admissions, na.rm = TRUE),
-    total_emergency_admissions_via_a_e = sum(total_emergency_admissions_via_a_e, na.rm = TRUE)
-  )
-
-# Save the summary to a CSV file with the new name
-write.csv(winter_summary, "hospital_winter_summary.csv", row.names = FALSE)
-
-print("Summary saved to hospital_winter_summary.csv")
 
 ######################
-#### this code is for the totals of ane emergency for stats
+#### this code is for the totals of ane emergency for stats of the winters 
 
-library(dplyr)
-library(lubridate)
-
-# Create sequences for each winter period including November
-y17_18 <- format(as.Date(seq(lubridate::ymd('2017-11-01'), lubridate::ymd('2018-03-04'), by='1 month')), "%Y-%m")
-y18_19 <- format(as.Date(seq(lubridate::ymd('2018-11-01'), lubridate::ymd('2019-04-03'), by='1 month')), "%Y-%m")
-y19_20 <- format(as.Date(seq(lubridate::ymd('2019-11-01'), lubridate::ymd('2020-03-01'), by='1 month')), "%Y-%m")
-y20_21 <- format(as.Date(seq(lubridate::ymd('2020-11-01'), lubridate::ymd('2021-04-04'), by='1 month')), "%Y-%m")
-y21_22 <- format(as.Date(seq(lubridate::ymd('2021-11-01'), lubridate::ymd('2022-04-03'), by='1 month')), "%Y-%m")
-y22_23 <- format(as.Date(seq(lubridate::ymd('2022-11-01'), lubridate::ymd('2023-04-03'), by='1 month')), "%Y-%m")
-y23_24 <- format(as.Date(seq(lubridate::ymd('2023-11-01'), lubridate::ymd('2024-03-31'), by='1 month')), "%Y-%m")
-y24_25 <- format(as.Date(seq(lubridate::ymd('2024-11-01'), lubridate::ymd('2025-02-23'), by='1 month')), "%Y-%m")
-
-# Convert sequences to date format
-winter_dates <- c(y17_18, y18_19, y19_20, y20_21, y21_22, y22_23, y23_24, y24_25)
-winter_dates <- as.Date(paste0(winter_dates, "-01"))
-
-# Filter and summarize the data
-aevolume <- aevolume %>%
-  mutate(period_month = format(period, "%Y-%m")) %>%
-  filter(as.Date(paste0(period_month, "-01")) %in% winter_dates) %>%
-  mutate(winter = case_when(
-    period_month %in% y17_18 ~ "17/18",
-    period_month %in% y18_19 ~ "18/19",
-    period_month %in% y19_20 ~ "19/20",
-    period_month %in% y20_21 ~ "20/21",
-    period_month %in% y21_22 ~ "21/22",
-    period_month %in% y22_23 ~ "22/23",
-    period_month %in% y23_24 ~ "23/24",
-    period_month %in% y24_25 ~ "24/25"
-  ))
-
-# Summarize total attendances for each winter period for each column
-winter_summary <- aevolume %>%
-  group_by(winter) %>%
-  summarise(
-    total_other_emergency_admissions = sum(other_emergency_admissions_i_e_not_via_a_e, na.rm = TRUE),
-    total_emergency_admissions = sum(total_emergency_admissions, na.rm = TRUE),
-    total_emergency_admissions_via_a_e = sum(total_emergency_admissions_via_a_e, na.rm = TRUE)
-  )
-
-# Save the summary to a CSV file with the new name
-write.csv(winter_summary, "hospital_winter_with_november.csv", row.names = FALSE)
-
-print("Summary saved to hospital_winter_with_november.csv")
-
-###########
+### note that winters include nov, dec, jan, feb ,march
 
 
 
