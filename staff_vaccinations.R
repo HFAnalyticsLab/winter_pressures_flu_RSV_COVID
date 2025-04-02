@@ -30,37 +30,68 @@ staff_vacc_raw <- sqlQuery(conn, staff_vacc_query)
 # close the connection
 odbcCloseAll()
 
-# ---- aggregate across all trusts----- 
-# get proportion of staff vaccinated - this needs to be QAed - check with excel
-staff_vacc_aggregate <- staff_vacc_raw %>% 
+# ---- initial checks----- 
+# # QA -- check site codes as some are 'total' or larger regions
+# check <- staff_vacc_raw %>% 
+#   filter(Organisation_Code== "Total" | str_detect(Organisation_Code, "^HCW")) %>% 
+#   distinct(Organisation_Code, Effective_Snapshot_Date) %>% 
+#   group_by(year = year(Effective_Snapshot_Date), Organisation_Code) %>% 
+#   summarise(n = n()) %>% 
+#   ungroup() %>% 
+#   pivot_wider(id_cols = Organisation_Code, names_from = year, values_from = n)
+# 
+# check_indiv_trusts <- staff_vacc_raw %>% 
+#   filter(Organisation_Code != "Total" & str_detect(Organisation_Code, "^HCW", negate = T)) %>% 
+#   distinct(Organisation_Code, Effective_Snapshot_Date) %>% 
+#   group_by(year = year(Effective_Snapshot_Date), Organisation_Code) %>% 
+#   summarise(n = n()) %>% 
+#   ungroup() %>% 
+#   pivot_wider(id_cols = Organisation_Code, names_from = year, values_from = n)
+
+# ------ aggregate data to get proportions of staff vaccinated -------
+# get proportion of staff vaccinated
+# for some reason, when excluding the 'Total' and 'HCW' ones, this aligns 2021 onward with the summary releases
+# but 2020 and earlier only match when you don't do this ... so selectively coding this to reflect that
+staff_vacc_aggregate_21onward <- staff_vacc_raw %>% 
   group_by(Staff_Group, Period_Start, Period_End, Effective_Snapshot_Date) %>% 
+  filter(Effective_Snapshot_Date > ymd('2021-03-01')) %>% 
+  filter(Organisation_Code != "Total" & str_detect(Organisation_Code, "^HCW", negate = T)) %>%  
   summarise(total_doses = sum(Doses_Given, na.rm = T), 
             total_n = sum(No_Involved_With_Direct_Patient_Care, na.rm = T),
             prop_vacc = total_doses/total_n) %>% 
   mutate(Staff_Group = as.factor(Staff_Group))
 
-# ------ qa checks -------
-# get all the 'All Frontline...' versions
-# check min and max dates
-staff_vacc_aggregate %>% 
-  group_by(Staff_Group) %>% 
-  summarise(min_date = min(Effective_Snapshot_Date), 
-            max_date = max(Effective_Snapshot_Date), 
-            min_period_st = min(Period_Start), 
-            max_period_st = max(Period_Start)) %>% 
-  filter(str_detect(tolower(Staff_Group), 'all front')) %>% 
-  arrange(min_date)
+staff_vacc_aggregate_pre21 <- staff_vacc_raw %>% 
+  group_by(Staff_Group, Period_Start, Period_End, Effective_Snapshot_Date) %>% 
+  filter(Effective_Snapshot_Date <= ymd('2021-03-01')) %>% 
+  summarise(total_doses = sum(Doses_Given, na.rm = T), 
+            total_n = sum(No_Involved_With_Direct_Patient_Care, na.rm = T),
+            prop_vacc = total_doses/total_n) %>% 
+  mutate(Staff_Group = as.factor(Staff_Group))
 
-# check all years there
-staff_vacc_aggregate %>% 
-  filter(str_detect(tolower(Staff_Group), 'all front')) %>% 
-  mutate(date = as.factor(Effective_Snapshot_Date)) %>% 
-  dplyr::select(-Staff_Group, -Period_Start) %>% # select isn't working?!
-  distinct(date) %>% 
-  print(n = 40)
+staff_vacc_aggregate <- rbind(staff_vacc_aggregate_pre21, staff_vacc_aggregate_21onward)
 
-sum(staff_vacc_aggregate$Period_End != staff_vacc_aggregate$Effective_Snapshot_Date) 
-# period end always matches effective snapshot
+# # ------ qa checks -------
+# staff_vacc_aggregate %>% 
+#   group_by(Staff_Group) %>% 
+#   summarise(min_date = min(Effective_Snapshot_Date), 
+#             max_date = max(Effective_Snapshot_Date), 
+#             min_period_st = min(Period_Start), 
+#             max_period_st = max(Period_Start)) %>% 
+#   filter(str_detect(tolower(Staff_Group), 'all front')) %>% 
+#   arrange(min_date)
+# 
+# # check all years there
+# staff_vacc_aggregate %>% 
+#   filter(str_detect(tolower(Staff_Group), 'all front')) %>% 
+#   mutate(date = as.factor(Effective_Snapshot_Date)) %>% 
+#   ungroup() %>% 
+#   dplyr::select(-Staff_Group, -Period_Start) %>% 
+#   distinct(date) %>% 
+#   print(n = 40)
+# 
+# sum(staff_vacc_aggregate$Period_End != staff_vacc_aggregate$Effective_Snapshot_Date) 
+# # period end always matches effective snapshot
 
 # ------ prep data for graphing -------- 
 
@@ -77,7 +108,7 @@ all_frontline <- staff_vacc_aggregate %>%
   mutate(fiscal_year = as.factor(paste(as.numeric(year)-1, year, sep = '-'))) # make year label nicer
 
 # ------- graph all years as individual lines ----- 
-all_frontline %>% 
+plot <- all_frontline %>% 
   ggplot() +
   geom_line(aes(x = month, y = prop_vacc, group = fiscal_year, colour = fiscal_year), size = 1) +
   ggtitle('Proportion of all frontline HCWs vaccinated for flu - needs QA') +
@@ -86,3 +117,10 @@ all_frontline %>%
   labs(colour = 'Fiscal year winter') +
   theme_minimal()
 
+# ------- prep data for use in flourish ------ 
+flourish <- all_frontline[all_frontline$month != 'Sep', c(7:10)]
+
+flourish <- flourish %>% 
+  pivot_wider(id_cols = month, names_from = fiscal_year, values_from = prop_vacc)
+
+write_csv(flourish, 'staff_vaccines_flourish.csv')
