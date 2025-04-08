@@ -27,7 +27,7 @@ y20_21<-format(as.Date(seq(lubridate::ymd('2020-11-30'),lubridate::ymd('2021-04-
 y21_22<-format(as.Date(seq(lubridate::ymd('2021-11-29'),lubridate::ymd('2022-04-03'),by='1 day')),"%Y-%m-%d")
 y22_23<-format(as.Date(seq(lubridate::ymd('2022-11-14'),lubridate::ymd('2023-04-03'),by='1 day')),"%Y-%m-%d")
 y23_24<-format(as.Date(seq(lubridate::ymd('2023-11-20'),lubridate::ymd('2024-03-31'),by='1 day')),"%Y-%m-%d")
-y24_25<-format(as.Date(seq(lubridate::ymd('2024-11-25'),lubridate::ymd('2025-03-20'),by='1 day')),"%Y-%m-%d")
+y24_25<-format(as.Date(seq(lubridate::ymd('2024-11-25'),lubridate::ymd('2025-03-31'),by='1 day')),"%Y-%m-%d")
 
 d <- paste0("W", sprintf("%02d", c(46:53, 1:14))) 
 
@@ -96,7 +96,7 @@ curl_download(link, destfile = destfile)
 
 # UKHSA - weekly flu 
 # 
-link<-'https://assets.publishing.service.gov.uk/media/67dae325dd55380604d70aa8/weekly-influenza-and-COVID-19-report-data-week-12-2025.ods'
+link<-'https://assets.publishing.service.gov.uk/media/67ed5ac5632d0f88e8248c1e/weekly-influenza-and-COVID-19-report-data-week-14-2025.ods'
 destfile <- here::here('data', "weekly_flu.ods")
 curl_download(link, destfile = destfile)
 
@@ -150,6 +150,9 @@ sheet_info_df <-sheet_info_full %>%
   ) %>% 
   clean_names()
 
+
+
+write.csv(sheet_info_df,"list_metrics.csv")
 
 sheets_to_import <- c("Flu", "RSV","Adult D&V, Norovirus", "Paediatric D&V, Norovirus", "D&V, Norovirus")
 
@@ -210,6 +213,9 @@ import_sitrep <- function(file, indicator){
   data_tidy
 }
 
+ 
+
+
 # Apply the process to all files in list_file
 Sitrep_daily_all_files <- list_file %>% 
   map(~ {
@@ -232,8 +238,6 @@ Sitrep_daily_all_files <- list_file %>%
 
 Sitrep_daily_all <- Sitrep_daily_all_files %>%
   reduce(bind_rows)
-
-
 
 
 # Winter illness data clean up -----------------------------------------------------------
@@ -290,8 +294,39 @@ winter_illness_flourish<-winter_illness %>%
   
 write_csv(winter_illness_flourish,'winter_illness.csv')
 
-#c("Beds Occ by long stay patients", "Adult G&A beds", "Adult critical care","G&A beds")
-  
+
+winter_d_v<-winter_illness %>% 
+  filter(broad_metric=="D&V, Norovirus") %>% 
+  mutate(count=ifelse(count==0,NA,count)) %>%
+  mutate(week = factor(week, levels = d)) %>% 
+  group_by(broad_metric,ft, week) %>% 
+  arrange() %>%
+  pivot_wider(id_cols = c(week,ft,broad_metric), names_from=metric_label, values_from=count) %>% 
+  clean_names() %>% 
+  mutate(d_v_beds_occupied=d_v_norovirus_beds_closed-d_v_norovirus_beds_closed_and_unoccupied) %>% 
+  pivot_longer(d_v_beds_occupied,names_to="metric", values_to="count") %>% 
+  pivot_wider(id_cols = c(week,broad_metric), names_from=ft, values_from=count) 
+
+write_csv(winter_d_v,'winter_illness.csv')
+
+num_total<-winter_d_v %>% 
+  group_by(ft) %>% 
+  summarise(across(where(is.numeric), sum, .names = "sum_{.col}"))
+
+max_week_df <- winter_d_v %>%
+  group_by(ft) %>%
+  filter(count == max(count)) %>%  # Select rows with the max count per group
+  select(week, broad_metric, ft, count)   # Keep only relevant columns
+
+
+max_week_df <- winter_d_v %>%
+  group_by(ft) %>%
+  summarise(
+    across(where(is.numeric), ~ week[which.max(.x)], .names = "week_max_{.col}"),  # Week when max occurs
+    across(where(is.numeric), max, .names = "max_{.col}")  # Max value itself
+  ) %>%
+  ungroup()
+
 
 winter_illness %>% 
   mutate(week = factor(week, levels = d)) %>% 
@@ -387,6 +422,10 @@ max_week_df <- england %>%
   select(week, broad_metric, ft, count)   # Keep only relevant columns
 
 
+num_total<-winter_illness %>% 
+  filter(broad_metric=="FLU") %>% 
+  group_by(ft, broad_metric) %>% 
+  summarise(sum=sum(count))
 
 
 # weekly flu --------------------------------------------------------------
@@ -465,10 +504,13 @@ write_csv(winter_flu_flourish,'winter_flu.csv')
 
 # RSV ---------------------------------------------------------------------
 
-rsv_admi<-readODS::read_ods(path = here::here('data', 'weekly_flu.ods') , sheet = 'Figure_34', skip = 4) 
+rsv_admi<-readODS::read_ods(path = here::here('data', 'weekly_flu.ods') , sheet = 'Figure_34') 
   
   
 rsv_admi <-rsv_admi %>% 
+    clean_names() %>% 
+    slice(which(.[[1]] == "Date"):n()) %>% 
+    row_to_names(., 1) %>% 
     clean_names() %>% 
     mutate(date=as.Date(date, format = "%d %B %Y")) %>% 
     mutate(isoweek=date2ISOweek(date)) %>%
@@ -485,7 +527,8 @@ rsv_admi <-rsv_admi %>%
     filter(!is.na(ft)) %>% 
     mutate(metric="Winter 2024 to 2025 season data release", 
          metric_label= "RSV hospital admission rates, per 100,000") %>% 
-  rename(count=rate)
+  rename(count=rate) %>% 
+  filter(ft %in% c("22/23", "23/24", "24/25"))
   
 
 
@@ -520,7 +563,8 @@ rsv_admi_past <-rsv_admi_past %>%
   filter(!is.na(ft)) %>% 
   mutate(metric="Winter 2023 to 2024 season data release", 
          metric_label= "RSV hospital admission rates, per 100,000") %>% 
-  rename(count=rate)
+  rename(count=rate) %>% 
+  filter(ft %in% c("17/18", "18/19"))
 
 
 rsv_admi_past<-rsv_admi_past %>% 
@@ -530,7 +574,7 @@ winter_rsv<-rbind(rsv_admi, rsv_admi_past)
 
 
 winter_rsv_flourish<-winter_rsv %>% 
-         mutate(metric=factor(metric, levels= c("Winter 2023 to 2024 season data release","Winter 2024 to 2025 season data release"))) %>% 
+         #mutate(metric=factor(metric, levels= c("Winter 2023 to 2024 season data release","Winter 2024 to 2025 season data release"))) %>% 
          mutate(count=ifelse(count==0,NA,count)) %>%
          mutate(week = factor(week, levels = d)) %>% 
          arrange(ft,week,metric) %>% 
@@ -562,10 +606,13 @@ write_csv(winter_rsv_flourish,'winter_rsv.csv')
 
 # COVID -------------------------------------------------------------------
 
-covid_admi<-readODS::read_ods(path = here::here('data', 'weekly_flu.ods') , sheet = 'Figure_24', skip = 3) 
+covid_admi<-readODS::read_ods(path = here::here('data', 'weekly_flu.ods') , sheet = 'Figure_24') 
 
 
-covid_admi <-covid_admi %>% 
+covid_admi <-covid_admi %>%
+  clean_names() %>% 
+  slice(which(.[[1]] == "Date"):n()) %>% 
+  row_to_names(., 1) %>% 
   clean_names() %>% 
   mutate(date=as.Date(date, format = "%d %B %Y")) %>% 
   mutate(isoweek=date2ISOweek(date)) %>%
