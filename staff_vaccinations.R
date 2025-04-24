@@ -9,7 +9,7 @@ conn <- odbcConnect('Facts_and_Dimensions',
                     uid = uid,
                     pwd = pwd)
 
-# just get all raw data from staff vacc
+# get all raw data from staff vacc
 staff_vacc_query <- 'SELECT [Organisation_Code]
       ,[Staff_Group]
       ,[No_Involved_With_Direct_Patient_Care]
@@ -50,8 +50,9 @@ odbcCloseAll()
 
 # ------ aggregate data to get proportions of staff vaccinated -------
 # get proportion of staff vaccinated
-# for some reason, when excluding the 'Total' and 'HCW' ones, this aligns 2021 onward with the summary releases
-# but 2020 and earlier only match when you don't do this ... so selectively coding this to reflect that
+# when excluding the 'Total' and 'HCW' ones, this aligns 2021 onward with the summary releases
+# 2020 and earlier only match when including them
+# this selectively codes to align with official releases:
 staff_vacc_aggregate_21onward <- staff_vacc_raw %>% 
   group_by(Staff_Group, Period_Start, Period_End, Effective_Snapshot_Date) %>% 
   filter(Effective_Snapshot_Date > ymd('2021-03-01')) %>% 
