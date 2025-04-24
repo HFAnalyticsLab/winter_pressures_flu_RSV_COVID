@@ -1,5 +1,11 @@
+##To download, process, analyse and visualise D&V, flu, RSV, and COVID, A&E diverts, Bed Occupancy, Delayed Dischargers and NHS Staff sickness and absence data
+
 rm(list=ls())
 
+
+
+
+# Setup -------------------------------------------------------------------
 
 library (here)
 library(curl)
@@ -16,8 +22,11 @@ library(THFstyle)
 options(scipen=999)
 
 
-#Update this or new data 
-# base dates --------------------------------------------------------------
+# Dates --------------------------------------------------------------
+
+#Update this or new data#
+
+
 
 y16_17<-format(as.Date(seq(lubridate::ymd('2016-11-28'),lubridate::ymd('2017-03-12'),by='1 day')),"%Y-%m-%d")
 y17_18<-format(as.Date(seq(lubridate::ymd('2017-11-20'),lubridate::ymd('2018-03-04'),by='1 day')),"%Y-%m-%d")
@@ -31,7 +40,9 @@ y24_25<-format(as.Date(seq(lubridate::ymd('2024-11-25'),lubridate::ymd('2025-03-
 
 d <- paste0("W", sprintf("%02d", c(46:53, 1:14))) 
 
-# sitreps -----------------------------------------------
+# Data download -----------------------------------------------
+
+# Urgent and Emergency Care Sit Reps --------------------------------------
 
  #2015-16
 link<-'https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2015/12/DailySR-Timeseries-WE-28.02.16.xlsx'
@@ -66,13 +77,15 @@ link<-'https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2021/04/
 destfile <- here::here('data', "raw2020.xlsx")
 curl_download(link, destfile = destfile)
 
+
+#####----Please note----######
+#for 2021-22, Need to manually change the RSV sheet name to get rid of the trailing space
+#####-------------------######
+
 # #2021-22
 link<-'https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2022/04/UEC-Daily-SitRep-Web-File-Timeseries.xlsx'
 destfile <- here::here('data', "raw2021.xlsx")
 curl_download(link, destfile = destfile) 
-#####----Please note----######
-#for 2021-22, Need to manually change the RSV sheet name to get rid of the trailing space
-#####-------------------######
 
 #2022-23
 link<-'https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2023/04/UEC-Daily-SitRep-Web-File-Timeseries.xlsx'
@@ -84,28 +97,23 @@ link<-'https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2024/04/
 destfile <- here::here('data', "raw2023.xlsx")
 curl_download(link, destfile = destfile)
 
-##################################
-##--Update these for new data--##
-##################################
-
 #2024-25
-link<-'https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2025/03/Web-File-Timeseries-UEC-Daily-SitRep-2.xlsx'
+link<-'https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2025/04/Web-File-Timeseries-UEC-Daily-SitRep.xlsx'
 
 destfile <- here::here('data', "raw2024.xlsx")
 curl_download(link, destfile = destfile)
 
-# UKHSA - weekly flu 
-# 
+# UKHSA - national flu report ---------------------------------------------
+
+##2024-25
 link<-'https://assets.publishing.service.gov.uk/media/67ed5ac5632d0f88e8248c1e/weekly-influenza-and-COVID-19-report-data-week-14-2025.ods'
 destfile <- here::here('data', "weekly_flu.ods")
 curl_download(link, destfile = destfile)
 
-
+##2023-24
 # link<-'https://assets.publishing.service.gov.uk/media/66d9e1fae87ad2f121826516/surveillance-of-influenza-and-other-seasonal-respiratory-viruses-in-the-UK-data_CORRECTION.ods'
 # destfile <- here::here('data', "weekly_flu2024.ods")
 # curl_download(link, destfile = destfile)
-
-
 
 
 # Read in all the sheets --------------------------------------------------
@@ -138,7 +146,7 @@ sheet_info_list <- lapply(excel_files, function(file) {
   )
 })
 
-# Combine the list into a single data frame
+# Combine the list into a single data frame - to check which metrics exist in which csv files 
 sheet_info_full <- bind_rows(sheet_info_list)
 
 sheet_info_df <-sheet_info_full %>% 
@@ -150,9 +158,10 @@ sheet_info_df <-sheet_info_full %>%
   ) %>% 
   clean_names()
 
-
-
 write.csv(sheet_info_df,"list_metrics.csv")
+
+
+#Specify the sheets you want to import 
 
 sheets_to_import <- c("Flu", "RSV","Adult D&V, Norovirus", "Paediatric D&V, Norovirus", "D&V, Norovirus")
 
@@ -216,7 +225,7 @@ import_sitrep <- function(file, indicator){
  
 
 
-# Apply the process to all files in list_file
+# Imprort the sheets from to all files in list_file
 Sitrep_daily_all_files <- list_file %>% 
   map(~ {
     # Identify sheets present in this file that are also in sheets_to_import
@@ -235,12 +244,14 @@ Sitrep_daily_all_files <- list_file %>%
   })
 
 
-
+#Create one data set
 Sitrep_daily_all <- Sitrep_daily_all_files %>%
   reduce(bind_rows)
 
 
-# Winter illness data clean up -----------------------------------------------------------
+
+
+# Sit rep data clean up -----------------------------------------------------------
 
 winter_illness<-Sitrep_daily_all %>% 
   filter(str_detect(name,"ENGLAND")) %>% 
@@ -283,17 +294,12 @@ winter_illness<-Sitrep_daily_all %>%
                                 str_detect(metric_label,"RSV")~"RSV")) 
 
 
-winter_illness_flourish<-winter_illness %>% 
-  filter(broad_metric=="D&V, Norovirus") %>% 
-  mutate(count=ifelse(count==0,NA,count)) %>%
-  mutate(week = factor(week, levels = d)) %>% 
-  group_by(broad_metric,ft, week) %>% 
-  arrange() %>%
-  pivot_wider(id_cols = c(week,broad_metric, metric_label), names_from=ft, values_from=count) %>% 
-  filter(metric_label=="D&V, Norovirus beds closed")
-  
-write_csv(winter_illness_flourish,'winter_illness.csv')
+#Total number 
+num_total_winter_illness<-winter_illness %>% 
+  group_by(ft,broad_metric) %>% 
+   summarise(count=sum(count))
 
+#Data for D&V chart (Figure 6)
 
 winter_d_v<-winter_illness %>% 
   filter(broad_metric=="D&V, Norovirus") %>% 
@@ -303,133 +309,58 @@ winter_d_v<-winter_illness %>%
   arrange() %>%
   pivot_wider(id_cols = c(week,ft,broad_metric), names_from=metric_label, values_from=count) %>% 
   clean_names() %>% 
-  mutate(d_v_beds_occupied=d_v_norovirus_beds_closed-d_v_norovirus_beds_closed_and_unoccupied) %>% 
+  mutate(d_v_beds_occupied=d_v_norovirus_beds_closed-d_v_norovirus_beds_closed_and_unoccupied)
+
+
+winter_d_v_flourish<-winter_d_v %>% 
   pivot_longer(d_v_beds_occupied,names_to="metric", values_to="count") %>% 
   pivot_wider(id_cols = c(week,broad_metric), names_from=ft, values_from=count) 
 
-write_csv(winter_d_v,'winter_illness.csv')
+write_csv(winter_d_v_flourish,'winter_illness.csv')
 
 num_total<-winter_d_v %>% 
   group_by(ft) %>% 
   summarise(across(where(is.numeric), sum, .names = "sum_{.col}"))
 
-max_week_df <- winter_d_v %>%
+
+#To identify the peak 
+max_week_df <- winter_d_v_flourish %>%
   group_by(ft) %>%
   filter(count == max(count)) %>%  # Select rows with the max count per group
   select(week, broad_metric, ft, count)   # Keep only relevant columns
 
 
-max_week_df <- winter_d_v %>%
-  group_by(ft) %>%
-  summarise(
-    across(where(is.numeric), ~ week[which.max(.x)], .names = "week_max_{.col}"),  # Week when max occurs
-    across(where(is.numeric), max, .names = "max_{.col}")  # Max value itself
-  ) %>%
-  ungroup()
-
-
-winter_illness %>% 
+winter_d_v %>% 
   mutate(week = factor(week, levels = d)) %>% 
-  filter(country=="ENGLAND" & ft %in% c("16/17","17/18", "22/23", "23/24", "24/25")& broad_metric=="D&V, Norovirus") %>% 
+  filter(ft %in% c("16/17","17/18","18/19","22/23", "23/24", "24/25")) %>%
   group_by(broad_metric,ft, week) %>% 
   arrange() %>% 
-  ggplot(aes(x = week, y = count, group = ft, colour = ft)) +
+  ggplot(aes(x = week, y = d_v_beds_occupied, group = ft, colour = ft)) +
   geom_line() +
-  # scale_x_date(
-  #   breaks = england$date[seq(1, length(england$date), by = 4)],  # Show labels every 4th week
-  #   labels = england$week[seq(1, length(england$week), by = 4)]   # Matching week labels
-  # ) +
-  facet_grid(cols = vars(metric_label), rows=vars(broad_metric), scales = "free") +
-  theme_minimal()+
   theme(axis.text.x = element_text(angle = 45, hjust = 1, size=8))+
   labs(x="Week", y="Count")+
   theme_THF() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
 
 
-# peak_data <- winter_illness %>%
-#   filter(ft %in% c("16/17", "17/18", "18/19", "22/23", "23/24", "24/25")& broad_metric=="D&V, Norovirus") %>% 
-#   group_by(metric_label, ft) %>%
-#   filter(count == max(count, na.rm = TRUE)) %>%
-#   ungroup() %>%
-#   select(broad_metric, metric_label, ft, week, count) %>% 
-#   mutate(lab=paste0(week,": ",count))
-# 
-# 
-# num_total<-winter_illness %>%
-#   filter(broad_metric=="FLU") %>%
-#   group_by(ft,broad_metric) %>%
-#   summarise(sum=sum(count))
-# 
-# 
-# winter_illness %>%
-#   filter(ft %in% c("16/17", "17/18", "18/19", "22/23", "23/24", "24/25")& broad_metric=="D&V, Norovirus") %>% 
-#   mutate(week = factor(week, levels = d)) %>% 
-#   ggplot(aes(x = week, y = count, group = ft, colour = ft)) +
-#   geom_line() +
-#   # Highlight peak points
-#   geom_point(data = peak_data, aes(x = week, y = count), size = 2, shape = 21, fill = "white") +
-#   # Annotate peaks using geom_label_repel
-#   ggrepel::geom_label_repel(
-#     data = peak_data, 
-#     aes(x = week, y = count, label = lab),
-#     size = 3, label.size = 0.2, label.padding = unit(0.15, "lines"),
-#     box.padding = 0.35, point.padding = 0.5, max.overlaps = 10,
-#     show.legend = FALSE
-#   ) +
-#   # scale_x_date(
-#   #   breaks = england$date[seq(1, length(england$date), by = 4)],
-#   #   labels = england$week[seq(1, length(england$week), by = 4)]
-#   # ) +
-#   facet_grid(cols = vars(metric_label), rows=vars(broad_metric), scales = "free") +
-#   labs(x="Week", y="Count", title="")+
-#   theme_THF() +
-#   theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
+# Flu --------------------------------------------------------------
 
-
-
-# cum_sum_total <- winter_illness %>%
-#   ungroup() %>%
-#   mutate(week = factor(week, levels = d)) %>% 
-#   group_by(ft, metric_label) %>%  
-#   arrange(ft, metric_label, week) %>% 
-#   mutate(sum = cumsum(count)) 
-
-
-
-# cum_sum_total %>%
-#   filter(ft %in% c("17/18", "22/23", "23/24", "24/25")) %>% 
-#   ggplot(aes(x = week, y = sum, group = ft, colour = ft)) +
-#   geom_line() +
-#   # scale_x_date(
-#   #   breaks = england$date[seq(1, length(england$date), by = 4)],
-#   #   labels = england$week[seq(1, length(england$week), by = 4)]
-#   # ) +
-#   facet_grid(cols = vars(metric_label), rows=vars(broad_metric), scales = "free") +
-#   labs(x="Week", y="Cumulative Sum", title="")+
-#   theme_THF() +
-#   theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
-
-
-num_total<-winter_illness %>% 
-  group_by(ft, metric_label) %>% 
-  summarise(sum=sum(count))
-
-
-max_week_df <- england %>%
-  group_by(broad_metric,ft) %>%
-  filter(count == max(count)) %>%  # Select rows with the max count per group
-  select(week, broad_metric, ft, count)   # Keep only relevant columns
-
-
+#Total bed days for flu
 num_total<-winter_illness %>% 
   filter(broad_metric=="FLU") %>% 
   group_by(ft, broad_metric) %>% 
   summarise(sum=sum(count))
 
+#Peak bed days for flu
+max_week_df <- winter_illness %>%
+  group_by(broad_metric,ft) %>%
+  filter(count == max(count)) %>%  # Select rows with the max count per group
+  select(week, broad_metric, ft, count)   # Keep only relevant columns
 
-# weekly flu --------------------------------------------------------------
 
+
+
+#Load UKHSA data for flu
 flu_admi<-readODS::read_ods(path = here::here('data', 'weekly_flu.ods') , sheet = 'Figure_28', skip = 3) 
 
 
@@ -452,7 +383,7 @@ flu_admi <-flu_admi %>%
   mutate(metric="admission_rates")
 
 
-
+#Load ICU and HDU admissions for flu
 flu_admi_icu<-readODS::read_ods(path = here::here('data', 'weekly_flu.ods') , sheet = 'Figure_31', skip = 3) 
 
 
@@ -476,19 +407,20 @@ flu_admi_icu <-flu_admi_icu %>%
   
   winter_flu_admi<-rbind(flu_admi, flu_admi_icu)
   
-# 
-# 
-# winter_flu_admi<-winter_illness %>% 
-#   filter(broad_metric=="FLU") %>% 
-#   ungroup() %>%
-#   select(-c(country)) %>% 
-#   full_join(flu_admi %>% 
-#                 filter(ft %in% c("17/18", "22/23", "23/24", "24/25")) %>% 
-#                 mutate(metric="influenza_admi_rate", 
-#                        metric_label= "Influenza hospital admission rates (UKHSA)") %>% 
-#                 select(-c(season, week_number, isoweek),count=rate))
-
+winter_flu_admi %>% 
+    mutate(week = factor(week, levels = d)) %>% 
+    filter(ft %in% c("16/17","17/18","18/19","22/23", "23/24", "24/25")) %>%
+    group_by(metric,ft, week) %>% 
+    arrange() %>% 
+    ggplot(aes(x = week, y = rate, group = ft, colour = ft)) +
+    geom_line() +
+    facet_grid(cols=vars(metric), scales="free")+
+    theme(axis.text.x = element_text(angle = 45, hjust = 1, size=8))+
+    labs(x="Week", y="Rate per 100,000")+
+    theme_THF() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
   
+
 winter_flu_flourish<-winter_flu_admi %>% 
   mutate(count=ifelse(rate==0,NA,rate)) %>%
   mutate(week = factor(week, levels = d)) %>% 
@@ -504,6 +436,7 @@ write_csv(winter_flu_flourish,'winter_flu.csv')
 
 # RSV ---------------------------------------------------------------------
 
+#Load UKHSA data for RSV
 rsv_admi<-readODS::read_ods(path = here::here('data', 'weekly_flu.ods') , sheet = 'Figure_34') 
   
   
@@ -574,7 +507,6 @@ winter_rsv<-rbind(rsv_admi, rsv_admi_past)
 
 
 winter_rsv_flourish<-winter_rsv %>% 
-         #mutate(metric=factor(metric, levels= c("Winter 2023 to 2024 season data release","Winter 2024 to 2025 season data release"))) %>% 
          mutate(count=ifelse(count==0,NA,count)) %>%
          mutate(week = factor(week, levels = d)) %>% 
          arrange(ft,week,metric) %>% 
@@ -585,22 +517,18 @@ winter_rsv_flourish<-winter_rsv %>%
 
 write_csv(winter_rsv_flourish,'winter_rsv.csv')
 
-# x<-winter_illness %>% 
-#   filter(broad_metric=="RSV") %>% 
-#   ungroup() %>% 
-#   select(-c(country)) %>% 
-#   filter(ft %in% c("21/22", "22/23", "23/24", "24/25")) %>% 
-#   full_join(rsv_admi %>% 
-#               filter(ft %in% c("21/22", "22/23", "23/24", "24/25")) %>% 
-#               mutate(broad_metric="RSV") %>% 
-#               select(-c(season, week_number, isoweek))) %>%
-#   mutate(count=ifelse(count==0,NA,count)) %>%
-#   mutate(week = factor(week, levels = d))
-# 
-# 
-# x %>% 
-#   group_by(metric_label, ft) %>% 
-  summarise(sum=sum(count))
+winter_rsv %>% 
+  mutate(rate=as.numeric(count)) %>% 
+  mutate(week = factor(week, levels = d)) %>% 
+  filter(ft %in% c("16/17","17/18","18/19","22/23", "23/24", "24/25")) %>%
+  group_by(metric,ft, week) %>% 
+  arrange() %>% 
+  ggplot(aes(x = week, y = rate, group = ft, colour = ft)) +
+  geom_line() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size=8))+
+  labs(x="Week", y="Rate per 100,000")+
+  theme_THF() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
 
 
 
@@ -642,290 +570,24 @@ winter_covid_flourish<-covid_admi %>%
 write_csv(winter_covid_flourish,'winter_covid.csv')
 
 
-
-# Bed occupancy ------------------------------------------------------
-
-sheets_to_import <- c("Beds Occ by long stay patients", "G&A beds", "Adult critical care", "Total G&A beds",  "Paediatric G&A beds")
-
-
-list_file <- sheet_info_full %>%
-  rowwise() %>%
-  filter(any(sheets_to_import %in% sheet_name)) %>% 
-  ungroup() %>%
-  select(file_path) %>%
-  pull()
-
-# Apply the process to all files in list_file
-Sitrep_daily_all_files <- list_file %>% 
-  map(~ {
-    # Identify sheets present in this file that are also in sheets_to_import
-    sheets_in_file <- sheet_info_full %>%
-      filter(file_path == .x) %>%
-      pull(sheet_name)
-    
-    valid_sheets <- intersect(sheets_in_file, sheets_to_import)
-    
-    # Only process the sheets that are actually in the file
-    Sitrep_daily_file <- valid_sheets %>%
-      map(import_sitrep, file = .x) %>% 
-      reduce(left_join, by = c("nhs.england.region", "code", "name", "date"))
-    
-    return(Sitrep_daily_file)
-  })
-
-
-
-Sitrep_daily_all <- Sitrep_daily_all_files %>%
-  reduce(bind_rows)
-
-# bed_occup<-Sitrep_daily_all %>% 
-#     filter(name=="ENGLAND"| name=="ENGLAND (All Acute Trusts)") %>% 
-#     mutate(isoweek=date2ISOweek(date)) %>%
-#     mutate(isoweek_short=str_sub(isoweek, 1,8)) %>% 
-#     mutate(country="England") %>% 
-#     group_by(isoweek_short,country=name) %>%  
-#     summarise(across(where(is.numeric), mean, na.rm = TRUE))%>% 
-#     mutate(date=ISOweek2date(paste0(isoweek_short,"-1"))) %>% 
-#     #select(-c(nhs.england.region, code,name)) %>% 
-#     pivot_longer(-c(isoweek_short, date, country), names_to="metric", values_to="count") %>% 
-#     ungroup() %>% 
-#     filter(metric %in% c("cc.adult.avail", "cc.adult.occ", "cc.adult.open",
-#                          "total.beds.avail","total.beds.occd",
-#                         "total.g&a.beds.occd","total.g&a.beds.open","total.beds.open")) %>% 
-#   mutate(metric=case_when(metric=="cc.adult.avail"~"cc.adult.open", 
-#                           metric=="total.beds.avail"|metric=="total.g&a.beds.open"~"total.beds.open", 
-#                           metric=="total.beds.occd"| metric=="total.g&a.beds.occd"~ "total.beds.occ", 
-#                           TRUE~metric)) %>% 
-#      ungroup() %>% 
-#   #   mutate(metric=case_when(metric %in% c("total.g&a.beds.open", "paeds.g&a.beds.open", "total.beds.avail")~ "total.beds.open", 
-#   #                            metric %in% c("total.g&a.beds.occd", "paeds.g&a.beds.occd")~ "total.beds.occd", 
-#   #                            metric %in% c("cc.adult.avail", "cc.adult.open")~"cc.adult.unocc",  
-#   #                            metric %in% c("core.beds.open","escalation.beds.open", "occupancy.rate.x", "occupancy.rate.y", 
-#   #            "total.g&a.beds.unavailable.to.non-covid.admissions.\"void\"","paeds.g&a.beds.unavailable.to.non-covid.admissions.“void”")~NA_character_,
-#   #                            TRUE~metric)) %>% 
-#   # filter(!is.na(metric)) %>% 
-#   group_by(isoweek_short, date, country, metric) %>%
-#   filter(!is.na(count)) %>% 
-#   mutate(country="England") %>% 
-#   pivot_wider(id_cols=c(isoweek_short, date, country), names_from=metric, values_from = count) %>%
-#   mutate(total.beds.occ.percent=(total.beds.occ/total.beds.open)*100,
-#          cc.adult.occ.percent=(cc.adult.occ/cc.adult.open)*100) %>% 
-#   pivot_longer(-c(isoweek_short, date, country), names_to="metric", values_to="count") %>% 
-#    mutate(ft=case_when( date %in% as.Date(y16_17)~"16/17",
-#                         date %in% as.Date(y17_18)~"17/18",
-#                         date %in% as.Date(y18_19)~"18/19", 
-#                         date %in% as.Date(y19_20)~"19/20", 
-#                         date %in% as.Date(y20_21)~"20/21",
-#                         date %in% as.Date(y21_22)~"21/22", 
-#                         date %in% as.Date(y22_23)~"22/23", 
-#                         date %in% as.Date(y23_24)~ "23/24",
-#                         date %in% as.Date(y24_25)~"24/25")) %>% 
-#   # mutate(metric_label= case_when(metric=="bed.occup.cc.beds"~ "Critical Care Bed Occupancy", 
-#   #                                metric=="bed.occup.ga.beds"~ "General and Acute Bed Occupancy", 
-#   #                                metric=="more.than.14.days"~ "More than 14 days", 
-#   #                                metric=="more.than.21.days"~ "More than 21 days", 
-#   #                                metric=="more.than.7.days"~ "More than 7 days",
-#   #                                metric=="cc.adult.occ"~ "Adult Critical Care Occupied Beds", 
-#   #                                metric=="cc.adult.unocc"~ "Adult Critical Care Available Beds",
-#   #                                metric=="total.beds.occd"~ "Total Occupied General and Acute Beds", 
-#   #                                metric=="total.beds.open"~ "Total General and Acute Beds", 
-#   #                                metric=="total.beds"~ "Total Number of Beds", 
-#   #                                metric=="tota.bed.occup"~ "Total Number of Occupied Beds", 
-#   #                                metric=="totel.bed.occup.percent"~"Overall Bed Occupancy")) %>% 
-#   # mutate(broad_metric=case_when(str_detect(metric,"bed")~"Bed Occupancy", 
-#   #                               str_detect(metric, "more.than")~"Long stay patients", 
-#   #                                str_detect(metric,"occ")~"Bed Occupancy" )) %>% 
-#   mutate(week=str_sub(isoweek_short,-3)) %>% 
-#   filter(!is.na(ft)) 
-# 
-# 
-# 
-# 
-# flourish_bed_occup<-bed_occup %>% 
-#   filter(ft %in% c("16/17","17/18", "18/19", "22/23", "23/24", "24/25")) %>% 
-#   mutate(week = factor(week, levels = d)) %>% 
-#   arrange(ft,week) %>% 
-#   filter(str_detect(metric, "open")| str_detect(metric,"percent")) %>% 
-#   mutate(metric_lab=ifelse(str_detect(metric,"cc.adult"), "Adult Critical Care Beds", "Total G&A Beds")) %>% 
-#   mutate(type_lab=ifelse(str_detect(metric,"percent"),"Bed Occupancy (%)", "Number of Beds")) %>% 
-#   mutate(metric_lab=factor(metric_lab, levels=c("Total G&A Beds", "Adult Critical Care Beds"))) %>% 
-#   arrange(ft, metric_lab, type_lab)  %>% 
-#    pivot_wider(id_cols = c(week,type_lab, metric_lab), names_from=ft, values_from=count) 
-# 
-# write.csv(flourish_bed_occup, 'flourish_bed_occup.csv') 
-# 
-
-
-#cc.adult.avail= cc.adult.open 
-#cc.adult.occup=fine no need to change
-#total.beds.avail=includes paeds and not just adults change to total.beds.open
-#total.beds.occd= occupied beds
-#total.g&a.beds.open=total.beds.open 
-#total.g&a.beds.occd=total.beds.occd
-
-
-
-# test<-bed_occup %>% 
-#   ungroup() %>% 
-#   select(ft, metric, count) %>% 
-#   group_by(ft, metric) %>% 
-#   summarise(sum=sum(count)) %>% 
-#   filter(sum>0) %>% 
-#   group_by(ft) %>% 
-#   mutate(order=row_number()) %>% 
-#   pivot_wider(id_cols = ft, names_from=order, values_from = metric)
-  
-  
-# average_bed_occup<-bed_occup %>% 
-#   group_by(ft,metric, metric_label) %>% 
-#   summarise(sum=sum(count),
-#             mean=mean(count), 
-#             max=max(count))
-# 
-# 
-# flourish_bed_occup<-bed_occup %>% 
-#   select(metric_label=="Total Number of Beds"| metric_label=="")
-#   #mutate(met_lab=ifelse(str_detect(metric_label,"beds"),"total",mean)) %>% 
-#   pivot_wider(id_cols = ft, names_from=metric_label, values_from=mean)
-#   
-# write.csv(flourish_bed_occup, 'flourish_bed_occup.csv') 
-#  
-# bed_occup %>% 
-#   mutate(week = factor(week, levels = d)) %>% 
-#   filter(str_detect(metric_label, "Total Number")) %>% 
-#   ggplot(aes(x=week, y=count,  group = metric_label, colour = metric_label))+
-#     geom_line()+
-#     # scale_x_date(
-#     #   breaks = england$date[seq(1, length(england$date), by = 4)],
-#     #   labels = england$week[seq(1, length(england$week), by = 4)]
-#     # ) +
-#     facet_grid(cols = vars(ft), scales = "free") +
-#     labs(x="Week", y="", title="")+
-#     theme_THF() +
-#     theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
-# 
-
-
-average_bed_occup<-bed_occup %>%
-  group_by(ft,metric) %>%
-  summarise(sum=sum(count),
-            mean=mean(count),
-            max=max(count))
-
-
-bed_occup_av<-Sitrep_daily_all %>% 
-  filter(name=="ENGLAND"| name=="ENGLAND (All Acute Trusts)") %>% 
-  mutate(country="England") %>% 
-  select(-c(nhs.england.region, code, name)) %>% 
-  pivot_longer(-c(date, country), names_to="metric", values_to="count") %>% 
-  ungroup() %>% 
-  filter(metric %in% c("cc.adult.avail", "cc.adult.occ", "cc.adult.open",
-                       "total.beds.avail","total.beds.occd",
-                       "total.g&a.beds.occd","total.g&a.beds.open","total.beds.open")) %>% 
-  mutate(metric=case_when(metric=="cc.adult.avail"~"cc.adult.open", 
-                          metric=="total.beds.avail"|metric=="total.g&a.beds.open"~"total.beds.open", 
-                          metric=="total.beds.occd"| metric=="total.g&a.beds.occd"~ "total.beds.occ", 
-                          TRUE~metric)) %>% 
-  ungroup() %>% 
-  filter(!is.na(count)) %>% 
-  distinct() %>% 
-  pivot_wider(id_cols=c(date, country), names_from=metric, values_from = count) %>%
-  mutate(total.beds.occ.percent=(total.beds.occ/total.beds.open)*100,
-         cc.adult.occ.percent=(cc.adult.occ/cc.adult.open)*100) %>% 
-  pivot_longer(-c(date, country), names_to="metric", values_to="count") %>% 
-  mutate(ft=case_when( date %in% as.Date(y16_17)~"16/17",
-                       date %in% as.Date(y17_18)~"17/18",
-                       date %in% as.Date(y18_19)~"18/19", 
-                       date %in% as.Date(y19_20)~"19/20", 
-                       date %in% as.Date(y20_21)~"20/21",
-                       date %in% as.Date(y21_22)~"21/22", 
-                       date %in% as.Date(y22_23)~"22/23", 
-                       date %in% as.Date(y23_24)~ "23/24",
-                       date %in% as.Date(y24_25)~"24/25")) %>% 
-  group_by(ft, metric) %>% 
-  summarise(mean=mean(count))
-
-
-
-flourish_bed_occup<-bed_occup_av %>% 
-  filter(ft %in% c("16/17","17/18", "18/19", "22/23", "23/24", "24/25")) %>% 
- # mutate(week = factor(week, levels = d)) %>% 
-  arrange(ft) %>% 
-  filter(str_detect(metric, "open")| str_detect(metric,"percent")) %>% 
-  mutate(metric_lab=ifelse(str_detect(metric,"cc.adult"), "Adult Critical Care Beds", "Total G&A Beds")) %>% 
-  mutate(type_lab=ifelse(str_detect(metric,"percent"),"Bed Occupancy (%)", "Number of Beds")) %>% 
-  mutate(metric_lab=factor(metric_lab, levels=c("Total G&A Beds", "Adult Critical Care Beds"))) %>% 
-  arrange(ft, metric_lab, type_lab) %>% 
-   pivot_wider(id_cols = c(ft,metric_lab), names_from=type_lab, values_from=mean) 
-
-write.csv(flourish_bed_occup, 'flourish_bed_occup.csv') 
-
-  
-    
- average_bed_occup %>% 
-    filter(str_detect(metric_label, "More")) %>% 
-      ggplot(aes(x=ft, y=mean,  group = metric_label, colour = metric_label))+
-      geom_line()
-    # scale_x_date(
-    #   breaks = england$date[seq(1, length(england$date), by = 4)],
-    #   labels = england$week[seq(1, length(england$week), by = 4)]
-    # ) +
-    #facet_grid(cols = vars(metric_label), rows=vars(broad_metric), scales = "free") +
-    labs(x="Week", y="", title="")+
-      theme_THF() +
-      theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
-    
-  
-
-# bed_occup %>%
-#   mutate(week = factor(week, levels = d)) %>% 
-#   filter(!is.na(ft)) %>% 
-#   filter( ft %in% c("17/18", "22/23", "23/24", "24/25")) %>% 
-#   ggplot(aes(x = week, y = count, group = ft, colour = ft)) +
-#   geom_line() +
-#   # Highlight peak points
-#   # geom_point(data = peak_data, aes(x = date, y = count), size = 2, shape = 21, fill = "white") +
-#   # Annotate peaks using geom_label_repel
-#   # ggrepel::geom_label_repel(
-#   #   data = peak_data, 
-#   #   aes(x = date, y = count, label = lab),
-#   #   size = 3, label.size = 0.2, label.padding = unit(0.15, "lines"),
-#   #   box.padding = 0.35, point.padding = 0.5, max.overlaps = 10,
-#   #   show.legend = FALSE
-#   # ) +
-#   # scale_x_date(
-#   #   breaks = england$date[seq(1, length(england$date), by = 4)],
-#   #   labels = england$week[seq(1, length(england$week), by = 4)]
-#   # ) +
-#   facet_grid(cols = vars(metric_label), rows=vars(broad_metric), scales = "free") +
-#   labs(x="Week", y="", title="")+
-#   theme_THF() +
-#   theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
-# 
-# 
-# 
-# 
-# 
-# 
-# bed_occup %>%
-#   filter(str_detect(metric_label, "Occupancy")) %>% 
-#   mutate(week=str_sub(isoweek_short,-3)) %>% 
-#   mutate(week = factor(week, levels = d)) %>% 
-#   #filter( ft %in% c("17/18", "22/23", "23/24", "24/25")) %>% 
-#   ggplot(aes(x = week, y = count, group = ft, colour = ft)) +
-#   geom_line() +
-# facet_grid(cols = vars(metric_label), rows=vars(broad_metric), scales = "free") +
-#   labs(x="Week", y="", title="")+
-#   theme_THF() +
-#   theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
-
+covid_admi %>% 
+  mutate(rate=as.numeric(count)) %>% 
+  mutate(week = factor(week, levels = d)) %>%
+  group_by(metric,ft, week) %>% 
+  arrange() %>% 
+  ggplot(aes(x = week, y = rate, group = ft, colour = ft)) +
+  geom_line() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size=8))+
+  labs(x="Week", y="Rate per 100,000")+
+  theme_THF() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
 
 
 # A&E diverts -------------------------------------------------------------
 
 sheets_to_import <- c("A&E diverts", "A&E Diverts", "A&E closures", "A&E Closures")
 
-
+#Get list of csv with these sheets 
 list_file <- sheet_info_full %>%
   rowwise() %>%
   filter(any(sheets_to_import %in% sheet_name)) %>% 
@@ -1041,30 +703,18 @@ a_and_e <- Sitrep_daily_all %>%
   mutate(country="ENGLAND")
 
 
-a_and_e %>% 
-  mutate(week = factor(week, levels = d)) %>% 
-  #filter( ft %in% c("17/18", "22/23", "23/24", "24/25")) %>% 
-  ggplot(aes(x = week, y = value, group = metric, colour = metric)) +
-  geom_line() +
-  facet_grid(cols = vars(ft), scales = "free") +
-  labs(x="Week", y="", title="")+
-  theme_THF() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
-
 
 
 a_and_e %>% 
    group_by(ft,metric) %>% 
   summarise(count=sum(value)) %>% 
   filter(metric=="a&e diverts") %>% 
-  ggplot(aes(x = ft, y = count, group = metric, colour = metric)) +
-  geom_line() +
-  #facet_grid(cols = vars(ft), scales = "free") +
+  ggplot(aes(x = ft, y = count),) +
+  geom_col(fill='#dd0031') +
+  scale_colour_continuous_THF()+
   labs(x="winters", y="", title="")+
   theme_THF() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
-
-
 
 
 flourish_a_and_e_diverts<-a_and_e %>% 
@@ -1075,9 +725,105 @@ flourish_a_and_e_diverts<-a_and_e %>%
 write.csv(flourish_a_and_e_diverts, 'flourish_a_and_e_diverts.csv') 
 
 
+# Bed occupancy -----------------------------------------------------------
+
+#Data download 
+link<-'https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2025/04/Beds-publication-Timeseries-March-2020-March-2025.xlsx'
+destfile <- here::here('data', "bedoccup.xlsx")
+curl_download(link, destfile = destfile)
+
+
+#Data load
+bedoccup<-readxl::read_excel(path = here::here('data', "bedoccup.xlsx") , sheet = 'Timeseries all acute trusts', skip = 12) 
+
+
+#Processing and calculations
+bedoccup<-bedoccup %>% 
+  clean_names() %>% 
+  mutate(date=as.Date(paste("28", month), format = "%d %B %Y")) %>% 
+  select(date,g_a_beds_available) 
+
+bedoccup_calc<-bedoccup %>% 
+  mutate(ft=case_when( date %in% as.Date(y22_23)~"22/23", 
+                       date %in% as.Date(y23_24)~ "23/24",
+                       date %in% as.Date(y24_25)~"24/25")) %>% 
+
+  filter(!is.na(ft)) %>% 
+  group_by(ft) %>% 
+  summarise(count=mean(g_a_beds_available))
+    
+
+
+# Delay discharges --------------------------------------------------------
+
+#Data download
+link<-'https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2025/04/Daily-discharge-sitrep-timeseries-data-webfile-April2021-March2025.xlsx'
+destfile <- here::here('data', "delayed_discharges.xlsx")
+curl_download(link, destfile = destfile)
 
 
 
 
+#Data load
+dd<-readxl::read_excel(path =  here::here('data', "delayed_discharges.xlsx") , sheet = 'Daily Series', skip = 4) 
+
+dd<-dd %>% 
+  clean_names() %>% 
+  mutate(date=as.Date(date,format = "%Y-%m-%d")) %>% 
+  select(date,number_of_patients_remaining_in_hospital_who_no_longer_meet_the_criteria_to_reside)
 
 
+#Calculations 
+
+
+#Total bed days for delayed discharges 
+
+y24_25<-format(as.Date(seq(lubridate::ymd('2024-11-01'),lubridate::ymd('2025-03-31'),by='1 day')),"%Y-%m-%d")
+
+dd_calc<-dd %>% 
+  filter(date %in% as.Date(y24_25)) %>% 
+  summarise(count=sum(number_of_patients_remaining_in_hospital_who_no_longer_meet_the_criteria_to_reside))
+#Total bed days for flu
+flu_total<-winter_illness %>% 
+  filter(broad_metric=="FLU") %>% 
+  group_by(ft, broad_metric) %>% 
+  summarise(sum=sum(count)) %>% 
+  filter(ft=="24/25")
+
+dd_calc$count/flu_total$sum
+
+
+
+# Staff sickness and absence rate -----------------------------------------
+
+link<-'https://files.digital.nhs.uk/1F/68672F/NHS%20Sickness%20Absence%20rates%2C%20December%202024.xlsx'
+destfile <- here::here('data', 'staff_sickness.xlsx')
+curl_download(link, destfile = destfile)
+
+
+staff_sickness<-readxl::read_excel(path =  here::here('data', "staff_sickness.xlsx") , sheet = 'Table 1', skip = 2) 
+
+
+y16_17<-format(as.Date(seq(lubridate::ymd('2016-11-01'),lubridate::ymd('2017-03-01'),by='1 day')),"%Y-%m-%d")
+y17_18<-format(as.Date(seq(lubridate::ymd('2017-11-01'),lubridate::ymd('2018-03-01'),by='1 day')),"%Y-%m-%d")
+y18_19<-format(as.Date(seq(lubridate::ymd('2018-11-01'),lubridate::ymd('2019-03-01'),by='1 day')),"%Y-%m-%d")
+y22_23<-format(as.Date(seq(lubridate::ymd('2022-11-01'),lubridate::ymd('2023-03-01'),by='1 day')),"%Y-%m-%d")
+y23_24<-format(as.Date(seq(lubridate::ymd('2023-11-01'),lubridate::ymd('2024-03-31'),by='1 day')),"%Y-%m-%d")
+
+staff_sickness<-staff_sickness %>% 
+  clean_names() %>% 
+  mutate(date=as.Date(paste("01", month), format = "%d %B %Y")) %>% 
+  select(date,england) %>% 
+  mutate(ft=case_when(date %in% as.Date(y16_17)~"16/17",
+                      date %in% as.Date(y17_18)~"17/18",
+                      date %in% as.Date(y18_19)~"18/19",
+                      date %in% as.Date(y22_23)~"22/23", 
+                      date %in% as.Date(y23_24)~ "23/24")) %>% 
+  filter(!is.na(ft)) %>% 
+  group_by(ft) %>% 
+  summarise(average=mean(england))
+
+staff_sickness_calcs<-staff_sickness %>% 
+  mutate(winter=ifelse(ft %in% c("22/23","23/24"),"post-covid","pre-covid")) %>% 
+  group_by(winter) %>% 
+  summarise(average=mean(average))
