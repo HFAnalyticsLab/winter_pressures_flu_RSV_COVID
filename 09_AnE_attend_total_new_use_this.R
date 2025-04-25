@@ -13,11 +13,11 @@ library(janitor)
 
 
 library(readxl)
-url <- "https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2025/03/Monthly-AE-Time-Series-February-2025.xls"
-destfile <- "Monthly_AE_Time_Series_February_2025.xls"
+url <- "https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2025/04/Monthly-AE-Time-Series-March-2025.xls"
+destfile <- "Monthly_AE_Time_Series_March_2025.xls"
 curl::curl_download(url, destfile)
-Monthly_AE_Time_Series_February_2025 <- read_excel(destfile)
-View(Monthly_AE_Time_Series_February_2025)
+Monthly_AE_Time_Series_March_2025 <- read_excel(destfile)
+View(Monthly_AE_Time_Series_March_2025)
 
 aevolume <- read_excel(destfile, sheet = 'Activity')
 View(aevolume)
@@ -82,36 +82,9 @@ aevolume[2] = lapply(aevolume[2], FUN = function(y){as.numeric(y)})
 #
 # write_csv(aevolwait_v2, 'aevolwait_v2.csv')
 #
-# 
-# plot<-aevolwait%>% 
-#   select(c(Period, monthyear, pct4plusadmitted)) %>% 
-#   ggplot(.,aes(x=Period, y=pct4plusadmitted, group=1))+
-#   geom_line(colour='#dd0031')+
-#   scale_x_yearmonth( breaks = '6 months',date_labels = "%b %y")+
-#   theme_THF()+
-#   annotate("rect", xmin=as.Date("2020-03-01"), xmax=as.Date("2021-05-01"), 
-#            ymin=0, ymax=max(aevolwait$pct4plusadmitted),fill="grey20", alpha=.1)+
-#   annotate("richtext",x=as.Date("2020-03-01"), y=(max(aevolwait$pct4plusadmitted)-0.015), 
-#            label= "First two waves <br> of COVID-19", size=3, colour="black",hjust=0, fill=NA, label.color=NA)+
-#   # facet_grid(cols=vars(org_lab))+
-#   # scale_colour_THF()+
-#   scale_y_continuous(labels = scales::percent)+
-#   labs(x = "", y="Proportion of patients waiting 4+ hours to be admitted (%)", caption = "NHS England, A&E Attendances and Emergency Admissions")+
-#   theme(legend.text=element_text(size=11),
-#         legend.title = element_blank(),
-#         axis.text.x=element_text(size=8, angle=60), 
-#         axis.text.y=element_text(size=11),
-#         plot.caption = element_markdown(hjust=0, size=9),
-#         plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
-#         legend.margin=margin(0,0,0,0),
-#         legend.box.margin=margin(-10,-10,-10,-10))
 
-plot
-
-###########################
-# My code for a plot 
-#more code for plot not needed for stats
-
+#########################################################################################################################################################################
+# My code for a plot to visualise AnE attendances 
 # options(scipen = 999)
 # 
 # library(ggplot2)
@@ -148,7 +121,7 @@ ggsave("total_ae_attendances_plot.png", plot = plot, width = 10, height = 6)
 
 print("The plot has been saved as 'total_ae_attendances_plot.png'.")
 
-##############################
+###########################################################################################################################################################################
 # code for the sum of total attendances of winters from 2016-25 nov,dec,jan,feb,mar
 
 # Create sequences for each winter period including November
@@ -160,7 +133,7 @@ y20_21 <- format(as.Date(seq(lubridate::ymd('2020-11-01'), lubridate::ymd('2021-
 y21_22 <- format(as.Date(seq(lubridate::ymd('2021-11-01'), lubridate::ymd('2022-03-03'), by='1 month')), "%Y-%m")
 y22_23 <- format(as.Date(seq(lubridate::ymd('2022-11-01'), lubridate::ymd('2023-03-03'), by='1 month')), "%Y-%m")
 y23_24 <- format(as.Date(seq(lubridate::ymd('2023-11-01'), lubridate::ymd('2024-03-31'), by='1 month')), "%Y-%m")
-y24_25 <- format(as.Date(seq(lubridate::ymd('2024-11-01'), lubridate::ymd('2025-02-23'), by='1 month')), "%Y-%m")
+y24_25 <- format(as.Date(seq(lubridate::ymd('2024-11-01'), lubridate::ymd('2025-03-23'), by='1 month')), "%Y-%m")
 
 # Convert sequences to date format
 winter_dates <- c(y16_17, y17_18, y18_19, y19_20, y20_21, y21_22, y22_23, y23_24, y24_25)
