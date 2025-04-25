@@ -376,11 +376,11 @@ longtest3 <- ambdelay %>%
   select(numdelays30plus=count)
 
 longtest1 <- longtest1 %>%
-  mutate(date=format(as.Date(seq(ymd('2024-11-25'),ymd('2025-02-09'), by='1 day')),"%Y-%m-%d"))
+  mutate(date=format(as.Date(seq(ymd('2024-11-25'),ymd('2025-03-30'), by='1 day')),"%Y-%m-%d"))
 longtest2 <- longtest2 %>%
-  mutate(date=format(as.Date(seq(ymd('2024-11-25'),ymd('2025-02-09'), by='1 day')),"%Y-%m-%d"))
+  mutate(date=format(as.Date(seq(ymd('2024-11-25'),ymd('2025-03-30'), by='1 day')),"%Y-%m-%d"))
 longtest3 <- longtest3 %>%
-  mutate(date=format(as.Date(seq(ymd('2024-11-25'),ymd('2025-02-09'), by='1 day')),"%Y-%m-%d"))
+  mutate(date=format(as.Date(seq(ymd('2024-11-25'),ymd('2025-03-30'), by='1 day')),"%Y-%m-%d"))
 
 amball <- merge(longtest1,longtest2, by="date")
 amball <- merge(amball,longtest3, by="date")
