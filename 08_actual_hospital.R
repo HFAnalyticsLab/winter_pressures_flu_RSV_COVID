@@ -8,22 +8,16 @@ library(lubridate)
 library(tsibble)
 
 library(readxl)
-url <- "https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2025/03/Monthly-AE-Time-Series-February-2025.xls"
-destfile <- "Monthly_AE_Time_Series_February_2025.xls"
+url <- "https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2025/04/Monthly-AE-Time-Series-March-2025.xls"
+destfile <- "Monthly_AE_Time_Series_March_2025.xls"
 curl::curl_download(url, destfile)
-Monthly_AE_Time_Series_February_2025 <- read_excel(destfile)
-View(Monthly_AE_Time_Series_February_2025)
+Monthly_AE_Time_Series_March_2025 <- read_excel(destfile)
+View(Monthly_AE_Time_Series_March_2025)
 
 
 aevolume <- read_excel(destfile, sheet = 'Activity')
 View(aevolume)
 
-# Read the 'Performance' sheet
-# aewait <- read_excel(destfile, sheet = 'Performance')
-# View(aewait)
-
-# aevolume<-readxl::read_excel("data/aevol.xls", sheet='Activity')
-# aewait<-readxl::read_excel("data/aevol.xls", sheet='Performance')
 
 aevolume<-aevolume %>% 
   clean_names() %>% 
@@ -41,71 +35,9 @@ aevolume<-aevolume %>%
 
 aevolume[2:4] = lapply(aevolume[2:4], FUN = function(y){as.numeric(y)})
 
-#note that the code below was from other script is not relevant
-
-# #aewait<-aewait %>% 
-#   clean_names() %>% 
-#   slice(which(title=="Period"):n()) %>% 
-#   row_to_names(., 1) %>% 
-#   clean_names()
-
-#aewait<-aewait %>% 
-  # clean_names() %>% 
-  # select(c("period","percentage_in_4_hours_or_less_type_1")) %>% 
-  # mutate(period=as.Date(as.numeric(period), origin="1899-12-30")) %>% 
-  # filter(period>as.Date("2016-12-01")) %>% 
-  # mutate(percentage_in_4_hours_or_less_type_1=as.numeric(percentage_in_4_hours_or_less_type_1))
-
-# aevolwait <- merge(aevolume, aewait, by="period")
-# 
-# aevolwait <- aevolwait %>%
-#   mutate(Period=as.Date(period, origin="1899-12-30")) %>%
-#   mutate(monthyear=format(as.Date(period), "%b %y")) %>%
-#   mutate(aewait4plus=(1-percentage_in_4_hours_or_less_type_1)) %>%
-#   mutate(pct4to12admitted=number_of_patients_spending_4_hours_from_decision_to_admit_to_admission/total_emergency_admissions) %>%
-#   mutate(pct12admitted=number_of_patients_spending_12_hours_from_decision_to_admit_to_admission/total_emergency_admissions) %>%
-#   mutate(pct4plusadmitted=pct4to12admitted+pct12admitted) %>% 
-#   mutate(totattendaces=type_1_departments_major_a_e)
-# 
-# write_csv(aevolwait, 'aevolwait.csv')
-# 
-# 
-# aevolwait_v2<-aevolwait %>% 
-#   select(c(monthyear, pct4plusadmitted)) %>% 
-#   mutate(pct4plusadmitted=pct4plusadmitted*100) %>% 
-#   mutate(Metric="Waiting 4+ hours to be admitted (%)")
-# 
-# write_csv(aevolwait_v2, 'aevolwait_v2.csv')
 
 
-# plot<-aevolwait%>% 
-#   select(c(Period, monthyear, pct4plusadmitted)) %>% 
-#   ggplot(.,aes(x=Period, y=pct4plusadmitted, group=1))+
-#   geom_line(colour='#dd0031')+
-#   scale_x_yearmonth( breaks = '6 months',date_labels = "%b %y")+
-#   theme_THF()+
-#   annotate("rect", xmin=as.Date("2020-03-01"), xmax=as.Date("2021-05-01"), 
-#            ymin=0, ymax=max(aevolwait$pct4plusadmitted),fill="grey20", alpha=.1)+
-#   annotate("richtext",x=as.Date("2020-03-01"), y=(max(aevolwait$pct4plusadmitted)-0.015), 
-#            label= "First two waves <br> of COVID-19", size=3, colour="black",hjust=0, fill=NA, label.color=NA)+
-#   # facet_grid(cols=vars(org_lab))+
-#   # scale_colour_THF()+
-#   scale_y_continuous(labels = scales::percent)+
-#   labs(x = "", y="Proportion of patients waiting 4+ hours to be admitted (%)", caption = "NHS England, A&E Attendances and Emergency Admissions")+
-#   theme(legend.text=element_text(size=11),
-#         legend.title = element_blank(),
-#         axis.text.x=element_text(size=8, angle=60), 
-#         axis.text.y=element_text(size=11),
-#         plot.caption = element_markdown(hjust=0, size=9),
-#         plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
-#         legend.margin=margin(0,0,0,0),
-#         legend.box.margin=margin(-10,-10,-10,-10))
-# 
-# plot
-
-
-
-########## plot code use this if you want graph ######
+##################### plot code use this if you want to visualise ############################
 options(scipen = 999)
 
 library(ggplot2)
@@ -151,10 +83,9 @@ print("The plot has been saved as 'emergency_admissions_plot.png'.")
 
 print(plot)
 
-#################
 
-######################
-#### this code is for the totals of ane emergency for stats of the winters 
+#########################################################################################################################################################################
+# this code is for the total number of ane emergency hospital visits within the winters 
 
 ### note that winters include nov, dec, jan, feb ,march
 
@@ -204,7 +135,7 @@ winter_summary <- aevolume %>%
   )
 
 # Save the summary to a CSV file with the new name
-write.csv(winter_summary, "hospital_total_year_added.csv", row.names = FALSE)
+write.csv(winter_summary, "hospital_totals.csv", row.names = FALSE)
 
-print("Summary saved to hospital_total_year_added.csv")
+print("Summary saved to hospital_totals.csv") 
 
