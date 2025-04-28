@@ -122,7 +122,7 @@ ggsave("total_ae_attendances_plot.png", plot = plot, width = 10, height = 6)
 print("The plot has been saved as 'total_ae_attendances_plot.png'.")
 
 ###########################################################################################################################################################################
-# code for the sum of total attendances of winters from 2016-25 nov,dec,jan,feb,mar
+# code for the sum of total a&e attendances of winters from 2016-25 nov,dec,jan,feb,mar
 
 # Create sequences for each winter period including November
 y16_17 <- format(as.Date(seq(lubridate::ymd('2016-11-01'), lubridate::ymd('2017-03-01'), by='1 month')), "%Y-%m")
