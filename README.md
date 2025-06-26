@@ -21,7 +21,7 @@ This repository only includes code for the charts in the above publication and i
 * [Critical care and general acute beds- urgent and emergency care daily situation reports](https://www.england.nhs.uk/statistics/statistical-work-areas/bed-availability-and-occupancy/critical-care-and-general-acute-beds-urgent-and-emergency-care-daily-situation-reports/)
 * [NHS workforce statistics](https://digital.nhs.uk/data-and-information/publications/statistical/nhs-workforce-statistics/december-2024)
 * [COVID-19 Hospital Activity](https://digital.nhs.uk/data-and-information/publications/statistical/nhs-workforce-statistics/december-2024)
-* [NHS staff sickness absence rates]([https://digital.nhs.uk/data-and-information/publications/statistical/nhs-sickness-absence-rates/april-2020-provisional-statistics](https://digital.nhs.uk/data-and-information/publications/statistical/nhs-sickness-absence-rates)    
+* [NHS staff sickness absence rates](https://digital.nhs.uk/data-and-information/publications/statistical/nhs-sickness-absence-rates)    
 
 ## How does it work? 
 
